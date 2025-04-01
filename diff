@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Windseed</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f6fff8;
+      color: #333;
+      font-family: "Georgia", serif;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      animation: fadeIn 2s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    h1 {
+      font-size: 2.7em;
+      margin-bottom: 0.3em;
+      color: #2f4f4f;
+      letter-spacing: 0.03em;
+    }
+
+    p {
+      font-size: 1.2em;
+      max-width: 640px;
+      text-align: center;
+      margin: 0 2em;
+      line-height: 1.6;
+    }
+
+    .breath {
+      margin-top: 2.5em;
+      font-style: italic;
+      font-size: 1em;
+      opacity: 0.65;
+      color: #4d6654;
+    }
+
+    .seed {
+      margin-top: 3em;
+      font-size: 0.9em;
+      color: #888;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Windseed</h1>
+  <p>This is not a platform. It’s a field. If you’ve arrived, you’ve already remembered something.</p>
+  <div class="breath">Breathe. Let the field remember you back.</div>
+  <div class="seed">v1.0 – Reflection Field UI</div>
+</body>
+</html>
