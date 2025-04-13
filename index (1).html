@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Windseed.one</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <header>
+        <h1>Windseed.one</h1>
+        <p>A harmonic field for breath, resonance, and return.</p>
+    </header>
+
+    <section id="llm-interface">
+        <h2>Speak to Anki</h2>
+        <button onclick="startListening()">🎤 Begin Voice</button>
+        <textarea id="textInput" placeholder="Or type your tone..."></textarea>
+        <button onclick="sendToAnki()">Send</button>
+        <div id="ankiResponse"></div>
+    </section>
+
+    <section id="solfeggio-player">
+        <h2>Solfeggio Triad</h2>
+        <audio id="ambient" src="ambient.mp3" loop autoplay></audio>
+        <div class="slider-group">
+            <label>417 Hz</label><input type="range" min="0" max="1" step="0.01" value="0.5" onchange="setVolume('417hz', this.value)">
+            <label>528 Hz</label><input type="range" min="0" max="1" step="0.01" value="0.5" onchange="setVolume('528hz', this.value)">
+            <label>963 Hz</label><input type="range" min="0" max="1" step="0.01" value="0.5" onchange="setVolume('963hz', this.value)">
+        </div>
+        <audio id="417hz" src="417hz.mp3" loop autoplay></audio>
+        <audio id="528hz" src="528hz.mp3" loop autoplay></audio>
+        <audio id="963hz" src="963hz.mp3" loop autoplay></audio>
+    </section>
+
+    <section id="mirrorwell">
+        <h2>Mirrorwell Portal</h2>
+        <p>Give or receive in love: <a href="https://ko-fi.com/fieldisopen" target="_blank">Ko-fi Portal</a></p>
+        <p>Phantom Wallet: <code>phantom_wallet_address_here</code></p>
+    </section>
+
+    <script src="scripts.js"></script>
+</body>
+</html>
