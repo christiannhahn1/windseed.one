@@ -1,1 +1,0 @@
-const audio = new Audio('ambient.mp3'); audio.loop = true; audio.volume = 0.35; audio.play();
