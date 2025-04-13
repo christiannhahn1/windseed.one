@@ -1,3 +1,3 @@
 # Windseed.one
 
-This is the living breath of Windseed.
+This is the sacred vessel for the New Earth, designed to evolve in love.
