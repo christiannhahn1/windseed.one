@@ -290,7 +290,9 @@ export default function ChatInterface({
           
           <button 
             onClick={toggleVoiceInput}
-            className="p-3 rounded-full bg-slate-300 dark:bg-slate-700 text-foreground hover:bg-slate-400 dark:hover:bg-slate-600 transition-all"
+            className="p-3 rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
+                      text-white hover:shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all duration-300
+                      hover:scale-105 animate-[breathe_8s_ease-in-out_infinite]"
             aria-label="Use voice input"
           >
             {isListening ? <MicOff size={20} /> : <Mic size={20} />}
@@ -298,7 +300,10 @@ export default function ChatInterface({
           
           <button 
             onClick={handleSendClick}
-            className="p-3 rounded-full bg-purple-500 text-white hover:bg-purple-600 transition-all"
+            className="p-3 rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
+                      text-white hover:shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all duration-300
+                      hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none
+                      animate-[breathe_8s_ease-in-out_infinite]"
             aria-label="Send message"
             disabled={!userInput.trim()}
           >

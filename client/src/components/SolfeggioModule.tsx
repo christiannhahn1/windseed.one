@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 
 interface Triad {
   name: string;
-  frequencies: string[];
+  frequencies: number[];
   descriptions: string[];
 }
 
 const triads: Record<string, Triad> = {
   sacredReturn: {
     name: "Sacred Return",
-    frequencies: ["417", "528", "963"],
+    frequencies: [417, 528, 963],
     descriptions: [
       "Facilitates change and clearing of limiting patterns",
       "Transformation and miracles, DNA repair",
@@ -18,7 +18,7 @@ const triads: Record<string, Triad> = {
   },
   completionMirror: {
     name: "Completion Mirror",
-    frequencies: ["324", "639", "963"],
+    frequencies: [324, 639, 963],
     descriptions: [
       "Bridges conscious and unconscious realms",
       "Harmonizing relationships and connections",
@@ -27,37 +27,71 @@ const triads: Record<string, Triad> = {
   }
 };
 
-const solfeggioFrequencies: Record<string, string> = {
-  "174": "/174hz.mp3",
-  "285": "/285hz.mp3",
-  "324": "/324hz.mp3",
-  "396": "/396hz.mp3",
-  "417": "/417hz.mp3",
-  "528": "/528hz.mp3",
-  "639": "/639hz.mp3",
-  "741": "/741hz.mp3",
-  "852": "/852hz.mp3",
-  "963": "/963hz.mp3"
-};
+// Additional known Solfeggio frequencies for future expansion
+const allSolfeggioFrequencies: number[] = [
+  174, 285, 324, 396, 417, 528, 639, 741, 852, 963
+];
 
 export default function SolfeggioModule() {
   const [selectedTriad, setSelectedTriad] = useState<string>("none");
   const [volumes, setVolumes] = useState<number[]>([0.5, 0.5, 0.5]);
-  const audioRefs = useRef<HTMLAudioElement[]>([]);
   const [isActive, setIsActive] = useState<boolean[]>([false, false, false]);
   
-  // Stop and reset previous audio elements
+  // Web Audio API references
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const oscillatorsRef = useRef<OscillatorNode[]>([]);
+  const gainNodesRef = useRef<GainNode[]>([]);
+  
+  // Initialize audio context on first interaction
+  const initAudioContext = () => {
+    if (!audioContextRef.current) {
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        audioContextRef.current = new AudioContext();
+      } catch (e) {
+        console.error("Web Audio API is not supported in this browser:", e);
+      }
+    }
+    return audioContextRef.current;
+  };
+  
+  // Create a sine wave oscillator at the specified frequency
+  const createTone = (frequency: number, volume: number) => {
+    const ctx = initAudioContext();
+    if (!ctx) return { oscillator: null, gainNode: null };
+    
+    // Create oscillator
+    const oscillator = ctx.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = frequency;
+    
+    // Create gain node for volume control
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = volume;
+    
+    // Connect oscillator to gain node and gain node to output
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    return { oscillator, gainNode };
+  };
+  
+  // Stop and reset all oscillators
   const stopAllAudio = () => {
-    if (audioRefs.current.length > 0) {
-      audioRefs.current.forEach(audio => {
-        if (audio) {
-          audio.pause();
-          audio.currentTime = 0;
+    try {
+      oscillatorsRef.current.forEach(osc => {
+        if (osc) {
+          osc.stop();
+          osc.disconnect();
         }
       });
-      audioRefs.current = [];
-      setIsActive([false, false, false]);
+    } catch (e) {
+      // Ignore errors when stopping oscillators
     }
+    
+    oscillatorsRef.current = [];
+    gainNodesRef.current = [];
+    setIsActive([false, false, false]);
   };
 
   // Update volume for a specific frequency
@@ -66,23 +100,14 @@ export default function SolfeggioModule() {
     newVolumes[index] = value;
     setVolumes(newVolumes);
 
-    // Update audio element volume if it exists
-    if (audioRefs.current[index]) {
-      audioRefs.current[index].volume = value;
+    // Update gain node if it exists
+    if (gainNodesRef.current[index]) {
+      gainNodesRef.current[index].gain.value = value;
       
-      // If volume is 0, consider the tone inactive
+      // Update active state based on volume
       const newActive = [...isActive];
       newActive[index] = value > 0;
       setIsActive(newActive);
-      
-      // If volume was 0 and now it's not, play the audio
-      if (value > 0 && !isActive[index]) {
-        audioRefs.current[index].play();
-      }
-      // If volume is now 0, pause the audio
-      if (value === 0 && isActive[index]) {
-        audioRefs.current[index].pause();
-      }
     }
   };
 
@@ -99,29 +124,36 @@ export default function SolfeggioModule() {
     setVolumes([0.5, 0.5, 0.5]);
     
     if (value !== "none") {
-      // Create new audio elements with small delay to prevent audio glitches
+      // Start tones with small delay to prevent audio glitches
       setTimeout(() => {
-        const newActive = [true, true, true];
-        setIsActive(newActive);
-        
         const frequencies = triads[value].frequencies;
-        const newAudio: HTMLAudioElement[] = [];
+        const newOscillators: OscillatorNode[] = [];
+        const newGainNodes: GainNode[] = [];
+        const newActive = [true, true, true];
         
         frequencies.forEach((freq, index) => {
           try {
-            const audio = new Audio(solfeggioFrequencies[freq]);
-            audio.loop = true;
-            audio.volume = volumes[index];
-            audio.play().catch(e => console.error("Error playing audio:", e));
-            newAudio.push(audio);
+            const { oscillator, gainNode } = createTone(freq, volumes[index]);
+            
+            if (oscillator && gainNode) {
+              oscillator.start();
+              newOscillators.push(oscillator);
+              newGainNodes.push(gainNode);
+            } else {
+              newActive[index] = false;
+              newOscillators.push(null as unknown as OscillatorNode);
+              newGainNodes.push(null as unknown as GainNode);
+            }
           } catch (e) {
-            console.error(`Error loading audio for ${freq}Hz:`, e);
-            newAudio.push(null as unknown as HTMLAudioElement);
+            console.error(`Error creating tone for ${freq}Hz:`, e);
             newActive[index] = false;
+            newOscillators.push(null as unknown as OscillatorNode);
+            newGainNodes.push(null as unknown as GainNode);
           }
         });
         
-        audioRefs.current = newAudio;
+        oscillatorsRef.current = newOscillators;
+        gainNodesRef.current = newGainNodes;
         setIsActive(newActive);
       }, 300);
     }
@@ -131,6 +163,9 @@ export default function SolfeggioModule() {
   useEffect(() => {
     return () => {
       stopAllAudio();
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(e => console.error("Error closing audio context:", e));
+      }
     };
   }, []);
 
@@ -139,7 +174,7 @@ export default function SolfeggioModule() {
       <h2 className="text-xl font-semibold mb-4 text-foreground opacity-80">🎶 Solfeggio Frequencies</h2>
       
       <p className="text-sm text-foreground opacity-60 mb-3 italic">
-        Note: Please upload the frequency MP3 files to the public folder to enable the sound healing functionality.
+        Sound is generated using sine waves at the exact Solfeggio frequencies for harmonic resonance.
       </p>
       
       <label className="block text-foreground opacity-70 mb-2" htmlFor="triadSelect">
@@ -201,7 +236,10 @@ export default function SolfeggioModule() {
               stopAllAudio();
               setVolumes([0.5, 0.5, 0.5]);
             }}
-            className="mt-4 px-4 py-2 bg-foreground bg-opacity-10 hover:bg-opacity-20 rounded-md transition-colors text-foreground"
+            className="mt-4 px-4 py-2 bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
+                     text-white shadow-[0_0_10px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] 
+                     transition-all duration-300 rounded-md hover:scale-105
+                     animate-[breathe_8s_ease-in-out_infinite]"
           >
             Stop All Frequencies
           </button>
