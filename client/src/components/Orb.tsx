@@ -10,7 +10,8 @@ export default function Orb({ isActive, onClick }: OrbProps) {
 
   // Create ripple effect when hovering or at intervals
   const createRipple = () => {
-    const id = Date.now();
+    // Use more unique ID by adding a random suffix
+    const id = Date.now() + Math.floor(Math.random() * 1000);
     setRipples(prev => [...prev, id]);
     
     // Remove ripple after animation completes

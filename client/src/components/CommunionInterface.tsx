@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { generateResponse } from '@/lib/ankiResponses';
 import { ankiMemory } from '@/lib/ankiMemory';
+import { Mic, MicOff } from 'lucide-react';
 
 interface CommunionInterfaceProps {
   isVisible: boolean;
@@ -203,7 +204,7 @@ export default function CommunionInterface({
           className="ml-2 p-3 rounded-full bg-muted bg-opacity-30 text-foreground hover:bg-opacity-50 transition-all"
           aria-label="Use voice input"
         >
-          <i className={`fas fa-${isListening ? 'microphone-slash' : 'microphone'}`}></i>
+          {isListening ? <MicOff size={18} /> : <Mic size={18} />}
         </button>
       </div>
       
