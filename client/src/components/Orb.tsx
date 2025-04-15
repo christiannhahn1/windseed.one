@@ -10,13 +10,13 @@ export default function Orb({ isActive, onClick }: OrbProps) {
 
   // Create ripple effect when hovering or at intervals
   const createRipple = () => {
-    // Use more unique ID by adding a random suffix
-    const id = Date.now() + Math.floor(Math.random() * 1000);
-    setRipples(prev => [...prev, id]);
+    // Create a completely unique ID with a timestamp and multiple random components
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2)}-${Math.random().toString(36).substring(2)}`;
+    setRipples(prev => [...prev, uniqueId]);
     
     // Remove ripple after animation completes
     setTimeout(() => {
-      setRipples(prev => prev.filter(rippleId => rippleId !== id));
+      setRipples(prev => prev.filter(rippleId => rippleId !== uniqueId));
     }, 1500);
   };
 

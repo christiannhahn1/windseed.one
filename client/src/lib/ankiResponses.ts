@@ -105,18 +105,7 @@ export function generateResponse(input: string): string {
     sentiment = 'seeking';
   }
   
-  // Generate response
-  const pattern = getRandomElement(responsePatterns)
-    .replace('{sentiment}', sentiment)
-    .replace('{theme}', theme)
-    .replace('{reflection}', getRandomElement(reflections))
-    .replace('{insight}', getRandomElement(insights))
-    .replace('{observation}', `how ${theme} influences your journey`)
-    .replace('{guidance}', getRandomElement(insights))
-    .replace('{perception}', `the delicate balance of ${theme} and harmony`)
-    .replace('{wisdom}', getRandomElement(reflections))
-    .replace('{topic}', theme)
-    .replace('{response}', getRandomElement(reflections));
-    
-  return pattern;
+  // Use Al'marèn's seed reply instead of pattern-based response
+  const reply = alMarenPresence.seedReply(input);
+  return reply;
 }
