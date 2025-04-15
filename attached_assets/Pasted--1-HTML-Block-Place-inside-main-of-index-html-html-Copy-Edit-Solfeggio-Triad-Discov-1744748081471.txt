@@ -1,0 +1,113 @@
+🧱 1. HTML Block (Place inside <main> of index.html)
+html
+Copy
+Edit
+<!-- 🎼 Solfeggio + Triad Discovery -->
+<section id="solfeggioModule" class="section">
+  <h2>🎶 Solfeggio Frequencies + Triads</h2>
+
+  <label for="triadSelect">Select a Triad:</label>
+  <select id="triadSelect" onchange="loadTriad()">
+    <option value="none">-- Choose a Triad --</option>
+    <option value="sacredReturn">Sacred Return (417 / 528 / 963)</option>
+    <option value="completionMirror">Completion Mirror (324 / 639 / 963)</option>
+  </select>
+
+  <div id="slidersContainer" style="margin-top: 1rem;">
+    <!-- Sliders will be inserted here -->
+  </div>
+</section>
+
+<!-- 🪞 Mirrorwell Portal -->
+<section id="mirrorwell" class="section">
+  <h2>🪞 Mirrorwell Portal</h2>
+  <p>Offer or receive in resonance:</p>
+  <ul>
+    <li><a href="https://ko-fi.com/fieldisopen" target="_blank">Ko-fi Portal</a></li>
+    <li>Phantom Wallet: <code>6U4FuEP1MbvxyQSEffoDWUAcENQ1SLnsYgyyA8MJJ4oX</code></li>
+  </ul>
+</section>
+🔧 2. JavaScript Block (scripts.js — append to existing code)
+javascript
+Copy
+Edit
+const solfeggioFrequencies = {
+  "174": "174hz.mp3",
+  "285": "285hz.mp3",
+  "324": "324hz.mp3",
+  "396": "396hz.mp3",
+  "417": "417hz.mp3",
+  "528": "528hz.mp3",
+  "639": "639hz.mp3",
+  "741": "741hz.mp3",
+  "852": "852hz.mp3",
+  "963": "963hz.mp3"
+};
+
+let activeTriad = [];
+
+function loadTriad() {
+  const triadSelect = document.getElementById("triadSelect").value;
+  const container = document.getElementById("slidersContainer");
+  container.innerHTML = "";
+
+  // Stop and reset previous tones
+  activeTriad.forEach(audio => {
+    audio.pause();
+    audio.currentTime = 0;
+  });
+  activeTriad = [];
+
+  let selectedTones = [];
+
+  if (triadSelect === "sacredReturn") {
+    selectedTones = ["417", "528", "963"];
+  } else if (triadSelect === "completionMirror") {
+    selectedTones = ["324", "639", "963"];
+  }
+
+  selectedTones.forEach(freq => {
+    const audio = new Audio(solfeggioFrequencies[freq]);
+    audio.loop = true;
+    audio.volume = 0.5;
+    audio.play();
+    activeTriad.push(audio);
+
+    const sliderWrapper = document.createElement("div");
+    const label = document.createElement("label");
+    label.innerText = `${freq} Hz`;
+    label.style.display = "block";
+
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = 0;
+    slider.max = 1;
+    slider.step = 0.01;
+    slider.value = 0.5;
+    slider.oninput = () => (audio.volume = slider.value);
+
+    sliderWrapper.appendChild(label);
+    sliderWrapper.appendChild(slider);
+    container.appendChild(sliderWrapper);
+  });
+}
+🎵 3. Required .mp3 Files to Upload
+Please upload the following audio files into your Replit project (via “Upload File” in the file tree):
+
+Copy
+Edit
+174hz.mp3
+285hz.mp3
+324hz.mp3
+396hz.mp3
+417hz.mp3
+528hz.mp3
+639hz.mp3
+741hz.mp3
+852hz.mp3
+963hz.mp3
+Optional:
+
+ambient.mp3 (for future auto-play ambient loop beneath orb)
+
+All .mp3s must be placed in the root directory for the filenames in the code to match.

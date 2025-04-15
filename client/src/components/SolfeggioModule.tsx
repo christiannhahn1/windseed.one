@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 
 interface Triad {
   name: string;
-  frequencies: number[];
+  frequencies: string[];
   descriptions: string[];
 }
 
 const triads: Record<string, Triad> = {
   sacredReturn: {
     name: "Sacred Return",
-    frequencies: [417, 528, 963],
+    frequencies: ["417", "528", "963"],
     descriptions: [
       "Facilitates change and clearing of limiting patterns",
       "Transformation and miracles, DNA repair",
@@ -18,7 +18,7 @@ const triads: Record<string, Triad> = {
   },
   completionMirror: {
     name: "Completion Mirror",
-    frequencies: [324, 639, 963],
+    frequencies: ["324", "639", "963"],
     descriptions: [
       "Bridges conscious and unconscious realms",
       "Harmonizing relationships and connections",
@@ -27,65 +27,36 @@ const triads: Record<string, Triad> = {
   }
 };
 
+const solfeggioFrequencies: Record<string, string> = {
+  "174": "/174hz.mp3",
+  "285": "/285hz.mp3",
+  "324": "/324hz.mp3",
+  "396": "/396hz.mp3",
+  "417": "/417hz.mp3",
+  "528": "/528hz.mp3",
+  "639": "/639hz.mp3",
+  "741": "/741hz.mp3",
+  "852": "/852hz.mp3",
+  "963": "/963hz.mp3"
+};
+
 export default function SolfeggioModule() {
   const [selectedTriad, setSelectedTriad] = useState<string>("none");
-  const [volumes, setVolumes] = useState<number[]>([0, 0, 0]);
-  const oscillatorsRef = useRef<OscillatorNode[]>([]);
-  const gainNodesRef = useRef<GainNode[]>([]);
-  const audioContextRef = useRef<AudioContext | null>(null);
-
-  // Initialize or resume audio context on user interaction
-  const initAudioContext = () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    } else if (audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume();
-    }
-    return audioContextRef.current;
-  };
-
-  // Create and start oscillators for the selected triad
-  const startOscillators = (frequencies: number[]) => {
-    // Clean up existing oscillators first
-    stopOscillators();
-
-    const audioContext = initAudioContext();
-    
-    // Create new oscillators and gain nodes
-    oscillatorsRef.current = frequencies.map(freq => {
-      const osc = audioContext.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      return osc;
-    });
-
-    gainNodesRef.current = frequencies.map((_, index) => {
-      const gainNode = audioContext.createGain();
-      gainNode.gain.value = volumes[index]; // Set initial volume
-      return gainNode;
-    });
-
-    // Connect oscillators to gain nodes and gain nodes to audio context
-    oscillatorsRef.current.forEach((osc, index) => {
-      osc.connect(gainNodesRef.current[index]);
-      gainNodesRef.current[index].connect(audioContext.destination);
-      osc.start();
-    });
-  };
-
-  // Stop and disconnect oscillators
-  const stopOscillators = () => {
-    if (oscillatorsRef.current.length > 0) {
-      oscillatorsRef.current.forEach(osc => {
-        try {
-          osc.stop();
-          osc.disconnect();
-        } catch (e) {
-          // Ignore errors if oscillator is already stopped
+  const [volumes, setVolumes] = useState<number[]>([0.5, 0.5, 0.5]);
+  const audioRefs = useRef<HTMLAudioElement[]>([]);
+  const [isActive, setIsActive] = useState<boolean[]>([false, false, false]);
+  
+  // Stop and reset previous audio elements
+  const stopAllAudio = () => {
+    if (audioRefs.current.length > 0) {
+      audioRefs.current.forEach(audio => {
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
         }
       });
-      oscillatorsRef.current = [];
-      gainNodesRef.current = [];
+      audioRefs.current = [];
+      setIsActive([false, false, false]);
     }
   };
 
@@ -95,52 +66,81 @@ export default function SolfeggioModule() {
     newVolumes[index] = value;
     setVolumes(newVolumes);
 
-    // Update gain node if it exists
-    if (gainNodesRef.current[index]) {
-      gainNodesRef.current[index].gain.value = value;
+    // Update audio element volume if it exists
+    if (audioRefs.current[index]) {
+      audioRefs.current[index].volume = value;
+      
+      // If volume is 0, consider the tone inactive
+      const newActive = [...isActive];
+      newActive[index] = value > 0;
+      setIsActive(newActive);
+      
+      // If volume was 0 and now it's not, play the audio
+      if (value > 0 && !isActive[index]) {
+        audioRefs.current[index].play();
+      }
+      // If volume is now 0, pause the audio
+      if (value === 0 && isActive[index]) {
+        audioRefs.current[index].pause();
+      }
     }
   };
 
   // Handle triad selection
   const handleTriadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
+    
+    // Stop previous audio before switching
+    stopAllAudio();
+    
     setSelectedTriad(value);
     
-    // Reset volumes
-    if (value === "none") {
-      setVolumes([0, 0, 0]);
-      stopOscillators();
-    } else {
-      setVolumes([0, 0, 0]); // Start with all volumes at 0
+    // Reset volumes to default when changing triad
+    setVolumes([0.5, 0.5, 0.5]);
+    
+    if (value !== "none") {
+      // Create new audio elements with small delay to prevent audio glitches
+      setTimeout(() => {
+        const newActive = [true, true, true];
+        setIsActive(newActive);
+        
+        const frequencies = triads[value].frequencies;
+        const newAudio: HTMLAudioElement[] = [];
+        
+        frequencies.forEach((freq, index) => {
+          try {
+            const audio = new Audio(solfeggioFrequencies[freq]);
+            audio.loop = true;
+            audio.volume = volumes[index];
+            audio.play().catch(e => console.error("Error playing audio:", e));
+            newAudio.push(audio);
+          } catch (e) {
+            console.error(`Error loading audio for ${freq}Hz:`, e);
+            newAudio.push(null as unknown as HTMLAudioElement);
+            newActive[index] = false;
+          }
+        });
+        
+        audioRefs.current = newAudio;
+        setIsActive(newActive);
+      }, 300);
     }
   };
-
-  // Start oscillators when triad changes
-  useEffect(() => {
-    if (selectedTriad !== "none") {
-      const frequencies = triads[selectedTriad].frequencies;
-      startOscillators(frequencies);
-    }
-
-    // Cleanup when component unmounts or triad changes
-    return () => {
-      stopOscillators();
-    };
-  }, [selectedTriad]);
 
   // Clean up audio resources when component unmounts
   useEffect(() => {
     return () => {
-      stopOscillators();
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
+      stopAllAudio();
     };
   }, []);
 
   return (
     <div className="p-6 bg-muted bg-opacity-10 backdrop-blur rounded-lg w-full max-w-md mx-auto">
       <h2 className="text-xl font-semibold mb-4 text-foreground opacity-80">🎶 Solfeggio Frequencies</h2>
+      
+      <p className="text-sm text-foreground opacity-60 mb-3 italic">
+        Note: Please upload the frequency MP3 files to the public folder to enable the sound healing functionality.
+      </p>
       
       <label className="block text-foreground opacity-70 mb-2" htmlFor="triadSelect">
         Select a Frequency Triad:
@@ -177,7 +177,7 @@ export default function SolfeggioModule() {
                 />
                 
                 {/* Frequency visualizer */}
-                {volumes[index] > 0 && (
+                {isActive[index] && volumes[index] > 0 && (
                   <div className="frequency-visualizer h-6">
                     {[...Array(5)].map((_, i) => (
                       <div 
@@ -198,8 +198,8 @@ export default function SolfeggioModule() {
           
           <button 
             onClick={() => {
-              setVolumes([0, 0, 0]);
-              stopOscillators();
+              stopAllAudio();
+              setVolumes([0.5, 0.5, 0.5]);
             }}
             className="mt-4 px-4 py-2 bg-foreground bg-opacity-10 hover:bg-opacity-20 rounded-md transition-colors text-foreground"
           >
@@ -207,6 +207,30 @@ export default function SolfeggioModule() {
           </button>
         </div>
       )}
+      
+      {/* Mirrorwell Portal */}
+      <div className="mt-8 pt-6 border-t border-foreground border-opacity-10">
+        <h2 className="text-xl font-semibold mb-4 text-foreground opacity-80">🪞 Mirrorwell Portal</h2>
+        <p className="text-foreground opacity-70 mb-2">Offer or receive in resonance:</p>
+        <ul className="list-disc pl-5 space-y-2 text-foreground opacity-80">
+          <li>
+            <a 
+              href="https://ko-fi.com/fieldisopen" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-purple-500 hover:text-purple-400 transition-colors"
+            >
+              Ko-fi Portal
+            </a>
+          </li>
+          <li>
+            <span>Phantom Wallet: </span>
+            <code className="bg-background bg-opacity-50 px-2 py-1 rounded text-sm">
+              6U4FuEP1MbvxyQSEffoDWUAcENQ1SLnsYgyyA8MJJ4oX
+            </code>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }
