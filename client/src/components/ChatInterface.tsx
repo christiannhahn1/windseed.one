@@ -3,7 +3,7 @@ import { generateResponse } from '@/lib/ankiResponses';
 import { ankiMemory } from '@/lib/ankiMemory';
 import { Mic, MicOff, Send } from 'lucide-react';
 
-interface CommunionInterfaceProps {
+interface ChatInterfaceProps {
   isVisible: boolean;
   onProcessingStart: () => void;
   onProcessingEnd: () => void;
@@ -15,11 +15,11 @@ interface ChatMessage {
   timestamp: number;
 }
 
-export default function CommunionInterface({ 
+export default function ChatInterface({ 
   isVisible,
   onProcessingStart,
   onProcessingEnd
-}: CommunionInterfaceProps) {
+}: ChatInterfaceProps) {
   const [userInput, setUserInput] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);

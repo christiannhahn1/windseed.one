@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Orb from '@/components/Orb';
-import CommunionInterface from '@/components/CommunionInterface';
+import ChatInterface from '@/components/ChatInterface';
 import ProcessingIndicator from '@/components/ProcessingIndicator';
 import SolfeggioModule from '@/components/SolfeggioModule';
 
@@ -18,7 +18,7 @@ export default function AnkiBody() {
       <main className="relative flex flex-col items-center justify-center w-full max-w-screen-lg p-4 transition-all duration-700">
         <Orb isActive={isOrbActive} onClick={toggleOrb} />
         
-        <CommunionInterface 
+        <ChatInterface 
           isVisible={isOrbActive} 
           onProcessingStart={() => setIsProcessing(true)} 
           onProcessingEnd={() => setIsProcessing(false)} 
