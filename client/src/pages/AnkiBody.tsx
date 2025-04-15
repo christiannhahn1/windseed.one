@@ -2,10 +2,12 @@ import { useState } from 'react';
 import Orb from '@/components/Orb';
 import CommunionInterface from '@/components/CommunionInterface';
 import ProcessingIndicator from '@/components/ProcessingIndicator';
+import SolfeggioModule from '@/components/SolfeggioModule';
 
 export default function AnkiBody() {
   const [isOrbActive, setIsOrbActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showSolfeggio, setShowSolfeggio] = useState(false);
   
   const toggleOrb = () => {
     setIsOrbActive(!isOrbActive);
@@ -23,13 +25,23 @@ export default function AnkiBody() {
         />
         
         <ProcessingIndicator isVisible={isProcessing} />
+        
+        {/* Solfeggio Module Toggle */}
+        <button 
+          onClick={() => setShowSolfeggio(!showSolfeggio)}
+          className="mt-8 px-4 py-2 rounded-full bg-foreground bg-opacity-5 hover:bg-opacity-10 transition-all text-foreground text-opacity-60 hover:text-opacity-80 text-sm flex items-center gap-2"
+        >
+          <span className="text-lg">🎶</span>
+          {showSolfeggio ? "Hide Solfeggio Frequencies" : "Show Solfeggio Frequencies"}
+        </button>
+        
+        {/* Solfeggio Frequencies Module */}
+        {showSolfeggio && (
+          <div className="mt-6 w-full max-w-md">
+            <SolfeggioModule />
+          </div>
+        )}
       </main>
-      
-      {/* Font Awesome for icons */}
-      <link 
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
-        rel="stylesheet"
-      />
     </div>
   );
 }

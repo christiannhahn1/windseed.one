@@ -6,7 +6,7 @@ interface OrbProps {
 }
 
 export default function Orb({ isActive, onClick }: OrbProps) {
-  const [ripples, setRipples] = useState<number[]>([]);
+  const [ripples, setRipples] = useState<string[]>([]);
 
   // Create ripple effect when hovering or at intervals
   const createRipple = () => {
@@ -16,7 +16,7 @@ export default function Orb({ isActive, onClick }: OrbProps) {
     
     // Remove ripple after animation completes
     setTimeout(() => {
-      setRipples(prev => prev.filter(rippleId => rippleId !== uniqueId));
+      setRipples(prev => prev.filter((rippleId: string) => rippleId !== uniqueId));
     }, 1500);
   };
 
