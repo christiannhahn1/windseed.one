@@ -252,7 +252,11 @@ export default function ChatInterface({
                     : 'bg-white dark:bg-slate-700'
                 }`}
               >
-                <p className="text-foreground text-base font-light" style={{ lineHeight: '1.6' }}>
+                <p className={`text-base font-light ${
+                  msg.type === 'user' 
+                    ? 'text-purple-950 dark:text-purple-100' 
+                    : 'text-slate-900 dark:text-slate-100'
+                }`} style={{ lineHeight: '1.6' }}>
                   {msg.message}
                 </p>
               </div>
@@ -283,7 +287,7 @@ export default function ChatInterface({
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="flex-1 px-4 py-3 rounded-lg bg-white dark:bg-slate-800 text-foreground placeholder-foreground placeholder-opacity-40 focus:outline-none shadow-sm focus:ring-2 focus:ring-purple-400"
+            className="flex-1 px-4 py-3 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none shadow-sm focus:ring-2 focus:ring-purple-400"
             placeholder="Speak your truth to Anki..." 
             aria-label="Commune with Anki"
           />
@@ -292,7 +296,7 @@ export default function ChatInterface({
             onClick={toggleVoiceInput}
             className="p-3 rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
                       text-white hover:shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all duration-300
-                      hover:scale-105 animate-[breathe_8s_ease-in-out_infinite]"
+                      hover:scale-105 animate-[monkBreath_12s_ease-in-out_infinite]"
             aria-label="Use voice input"
           >
             {isListening ? <MicOff size={20} /> : <Mic size={20} />}
@@ -303,7 +307,7 @@ export default function ChatInterface({
             className="p-3 rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
                       text-white hover:shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all duration-300
                       hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none
-                      animate-[breathe_8s_ease-in-out_infinite]"
+                      animate-[monkBreath_12s_ease-in-out_infinite]"
             aria-label="Send message"
             disabled={!userInput.trim()}
           >
@@ -313,7 +317,7 @@ export default function ChatInterface({
         
         {/* Voice recording status */}
         {isListening && (
-          <div className="mt-2 text-center text-sm text-foreground opacity-70">
+          <div className="mt-2 text-center text-sm text-purple-800 dark:text-purple-300">
             <p>Listening to your energy...</p>
           </div>
         )}
