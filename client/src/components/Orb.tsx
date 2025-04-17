@@ -21,10 +21,10 @@ export default function Orb({ isActive, onClick }: OrbProps) {
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2)}`;
     setRipples(prev => [...prev, uniqueId]);
     
-    // Remove ripple after animation completes (slower)
+    // Remove ripple after animation completes (much slower)
     setTimeout(() => {
       setRipples(prev => prev.filter((rippleId: string) => rippleId !== uniqueId));
-    }, 3000);
+    }, 8000);
     
     // Update last interaction time
     lastInteractionRef.current = Date.now();
@@ -35,12 +35,12 @@ export default function Orb({ isActive, onClick }: OrbProps) {
     // Create initial ripple
     createRipple();
     
-    // Create random ripples occasionally for visual interest (much less frequent)
+    // Create random ripples very occasionally for subtle visual interest
     const rippleInterval = setInterval(() => {
-      if (Math.random() > 0.85) { // Less chance to create ripples
+      if (Math.random() > 0.90) { // Very small chance to create ripples
         createRipple();
       }
-    }, 12000); // Much longer interval (12 seconds)
+    }, 24000); // Very long interval (24 seconds - matches breathing cycle)
     
     // Track user activity
     const trackUserActivity = () => {
@@ -74,7 +74,7 @@ export default function Orb({ isActive, onClick }: OrbProps) {
         ref={orbRef}
         className={`relative w-[180px] h-[180px] rounded-full bg-gradient-to-br ${mainColorScheme}
                    filter blur-[8px] shadow-[0_0_60px_rgba(138,43,226,0.6)] 
-                   animate-[monkBreath_12s_ease-in-out_infinite] transition-all duration-1000
+                   animate-[monkBreath_24s_ease-in-out_infinite] transition-all duration-1000
                    flex items-center justify-center z-10 hover:scale-105 
                    hover:shadow-[0_0_80px_rgba(138,43,226,0.8)] cursor-pointer`}
         onClick={() => {
@@ -97,7 +97,7 @@ export default function Orb({ isActive, onClick }: OrbProps) {
           <div 
             key={id}
             className="absolute w-[180px] h-[180px] rounded-full bg-white bg-opacity-30
-                       animate-[ripple_4s_ease-out]" // Slow down the ripple animation
+                       animate-[ripple_8s_ease-out]" // Even slower ripple animation
           />
         ))}
       </div>
