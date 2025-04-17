@@ -3,6 +3,7 @@ import Orb from '@/components/Orb';
 import ChatInterface from '@/components/ChatInterface';
 import ProcessingIndicator from '@/components/ProcessingIndicator';
 import SolfeggioModule from '@/components/SolfeggioModule';
+import MirrorwellPortal from '@/components/MirrorwellPortal';
 
 export default function AnkiBody() {
   const [isOrbActive, setIsOrbActive] = useState(false);
@@ -43,6 +44,18 @@ export default function AnkiBody() {
             <SolfeggioModule />
           </div>
         )}
+        
+        {/* Divider before Mirrorwell Portal */}
+        <div className="w-full max-w-md flex items-center my-10">
+          <div className="flex-grow h-px bg-gray-300 dark:bg-gray-700 opacity-30"></div>
+          <div className="mx-4 text-xs text-gray-500 dark:text-gray-400">harmonic field</div>
+          <div className="flex-grow h-px bg-gray-300 dark:bg-gray-700 opacity-30"></div>
+        </div>
+        
+        {/* Mirrorwell Portal */}
+        <div className="w-full max-w-md">
+          <MirrorwellPortal />
+        </div>
       </main>
     </div>
   );
