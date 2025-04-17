@@ -74,7 +74,7 @@ export default function Orb({ isActive, onClick }: OrbProps) {
         ref={orbRef}
         className={`relative w-[180px] h-[180px] rounded-full bg-gradient-to-br ${mainColorScheme}
                    filter blur-[8px] shadow-[0_0_60px_rgba(138,43,226,0.6)] 
-                   animate-[monkBreath_24s_ease-in-out_infinite] transition-all duration-1000
+                   animate-[monkBreath_24s_ease-in-out_infinite] animation-delay-sync transition-all duration-1000
                    flex items-center justify-center z-10 hover:scale-105 
                    hover:shadow-[0_0_80px_rgba(138,43,226,0.8)] cursor-pointer`}
         onClick={() => {

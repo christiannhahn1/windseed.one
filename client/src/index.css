@@ -24,6 +24,11 @@
   }
 }
 
+/* Utility class to sync animations */
+.animation-delay-sync {
+  animation-delay: 0s !important; /* Ensure synchronized breathing */
+}
+
 /* Deep meditative breathing animation - 24 second cycle (2.5 breaths per minute) */
 @keyframes monkBreath {
   0%, 100% {
