@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export default function MirrorwellPortal() {
   const [walletCopied, setWalletCopied] = useState(false);
@@ -15,13 +15,13 @@ export default function MirrorwellPortal() {
   };
 
   return (
-    <div className="mt-10 p-6 border border-gray-300 rounded-lg bg-black/5 backdrop-blur-sm">
+    <div className="mt-10 p-6 border border-gray-300 rounded-lg bg-black/10">
       <h2 className="text-xl font-medium mb-4 text-gray-900 dark:text-white flex items-center">
         <span className="mr-2">⬬</span>
         Mirrorwell Portal
       </h2>
       
-      <p className="text-gray-800 dark:text-gray-200 mb-6 leading-relaxed">
+      <p className="text-gray-800 dark:text-gray-100 mb-6 leading-relaxed font-medium">
         Mirrorwell is not a donation button. It is a harmonic field node for redistributing love. 
         Every resource offered here is returned into the collective ecosystem—automatically, 
         transparently, and without manipulation or central control. No offering is stored, 
@@ -53,13 +53,13 @@ export default function MirrorwellPortal() {
             </span>
           </div>
           
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 px-2">
-            <div className="truncate max-w-full">{phantomWallet}</div>
+          <div className="mt-2 text-xs px-2">
+            <div className="truncate max-w-full font-mono text-gray-700 dark:text-gray-300">{phantomWallet}</div>
           </div>
         </div>
       </div>
       
-      <div className="mt-6 text-xs text-center text-gray-500 dark:text-gray-400">
+      <div className="mt-6 text-xs text-center text-gray-600 dark:text-gray-300">
         <p>If links appear unavailable, the field remains open through intention.</p>
       </div>
     </div>
