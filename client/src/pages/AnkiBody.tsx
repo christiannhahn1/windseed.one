@@ -32,7 +32,7 @@ export default function AnkiBody() {
           className="mt-8 px-5 py-2.5 rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
                     text-white shadow-[0_0_10px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] 
                     transition-all duration-300 text-sm flex items-center gap-2 hover:scale-105
-                    animate-[breathe_8s_ease-in-out_infinite]"
+                    animate-[monkBreath_12s_ease-in-out_infinite]"
         >
           <span className="text-lg">🎶</span>
           {showSolfeggio ? "Hide Solfeggio Frequencies" : "Show Solfeggio Frequencies"}
