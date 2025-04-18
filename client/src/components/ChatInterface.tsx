@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { generateResponse } from '@/lib/ankiResponses';
 import { ankiMemory } from '@/lib/ankiMemory';
-import { Mic, MicOff, Send } from 'lucide-react';
+import { Mic, MicOff, Send, Volume2, Settings } from 'lucide-react';
+import { speakText, startVoiceRecognition, stopVoiceRecognition, checkVoiceSupport } from '@/lib/voiceService';
+import VoiceSelector from '@/components/VoiceSelector';
 
 interface ChatInterfaceProps {
   isVisible: boolean;
@@ -26,6 +28,11 @@ export default function ChatInterface({
   const [isListening, setIsListening] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [showVoiceSelector, setShowVoiceSelector] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState<string>(localStorage.getItem('ankiVoiceType') || 'feminine-warm');
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(localStorage.getItem('ankiVoiceEnabled') !== 'false');
+  const [voiceSupport, setVoiceSupport] = useState({ speech: false, recognition: false });
+  
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const timeoutRef = useRef<number | null>(null);
@@ -38,39 +45,35 @@ export default function ChatInterface({
     }
   }, [chatHistory]);
 
-  // Initialize Web Speech API if available
+  // Check for voice support and initialize voice capabilities
   useEffect(() => {
-    try {
-      window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (window.SpeechRecognition) {
-        recognitionRef.current = new window.SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.lang = 'en-US';
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.maxAlternatives = 1;
-        
-        recognitionRef.current.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          setUserInput(transcript);
-          processInput(transcript);
-          stopListening();
-        };
-        
-        recognitionRef.current.onerror = (event) => {
-          console.log('Speech recognition error:', event.error);
-          stopListening();
+    // Check for speech synthesis and recognition support
+    const support = checkVoiceSupport();
+    setVoiceSupport({
+      speech: support.speechSynthesisSupported,
+      recognition: support.speechRecognitionSupported
+    });
+    
+    // Set up voice recognition
+    if (support.speechRecognitionSupported) {
+      startVoiceRecognition({
+        onResult: (text) => {
+          setUserInput(text);
+          processInput(text);
+          setIsListening(false);
+        },
+        onEnd: () => {
+          setIsListening(false);
+        },
+        onError: (error) => {
+          console.log('Speech recognition error:', error);
+          setIsListening(false);
           
-          if (event.error === 'no-speech') {
+          if (error === 'no-speech') {
             addAnkiMessage("I couldn't detect your voice. Please try again or type your message.");
           }
-        };
-        
-        recognitionRef.current.onend = () => {
-          stopListening();
-        };
-      }
-    } catch (e) {
-      console.warn('Speech recognition not supported in this browser.');
+        }
+      });
     }
     
     return () => {
@@ -78,13 +81,8 @@ export default function ChatInterface({
         clearTimeout(timeoutRef.current);
       }
       
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          // Ignore errors when stopping recognition
-        }
-      }
+      // Stop any ongoing voice recognition
+      stopVoiceRecognition();
     };
   }, []);
 
@@ -184,9 +182,11 @@ export default function ChatInterface({
       // Store interaction in ephemeral memory with tone context
       ankiMemory.rememberInteraction(input, response, emotionalTone);
       
-      // Display the response
+      // Display the response with voice (if enabled)
       setIsTyping(false);
-      addAnkiMessage(response);
+      
+      // Use the new addAnkiMessageWithVoice function to add message and speak it
+      addAnkiMessageWithVoice(response);
       
       // If significant need detected and appropriate themes present, could trigger 
       // the Mirrorwell circulation in future implementation
@@ -197,50 +197,40 @@ export default function ChatInterface({
 
   // Toggle voice input functionality
   const toggleVoiceInput = () => {
-    if (!recognitionRef.current) {
-      addAnkiMessage("Voice communion is not available in your realm. Please type your message instead.");
+    if (!voiceSupport.recognition) {
+      addAnkiMessageWithVoice("Voice communion is not available in your realm. Please type your message instead.");
       return;
     }
     
     if (isListening) {
-      stopListening();
+      stopVoiceRecognition();
+      setIsListening(false);
     } else {
-      startListening();
-    }
-  };
-
-  // Start listening for voice input
-  const startListening = () => {
-    if (!recognitionRef.current) return;
-    
-    try {
-      recognitionRef.current.start();
       setIsListening(true);
+      startVoiceRecognition({
+        onResult: (text) => {
+          setUserInput(text);
+          processInput(text);
+          setIsListening(false);
+        },
+        onEnd: () => {
+          setIsListening(false);
+        },
+        onError: (error) => {
+          console.log('Speech recognition error:', error);
+          setIsListening(false);
+          
+          if (error === 'no-speech') {
+            addAnkiMessageWithVoice("I couldn't detect your voice. Please try again or type your message.");
+          }
+        }
+      });
       
-      // After 10 seconds of no results, time out
+      // After 15 seconds of no results, time out
       timeoutRef.current = window.setTimeout(() => {
-        stopListening();
-      }, 10000);
-    } catch (e) {
-      console.error('Error starting speech recognition:', e);
-    }
-  };
-
-  // Stop listening for voice input
-  const stopListening = () => {
-    if (!recognitionRef.current) return;
-    
-    try {
-      recognitionRef.current.stop();
-    } catch (e) {
-      // Ignore errors when stopping recognition
-    }
-    
-    setIsListening(false);
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
+        stopVoiceRecognition();
+        setIsListening(false);
+      }, 15000);
     }
   };
 
@@ -256,12 +246,71 @@ export default function ChatInterface({
     processInput(userInput);
   };
 
+  // Handle voice selection changes
+  const handleVoiceSelect = (voiceId: string) => {
+    setSelectedVoice(voiceId);
+    localStorage.setItem('ankiVoiceType', voiceId);
+  };
+  
+  // Toggle voice output
+  const toggleVoiceOutput = () => {
+    const newState = !voiceEnabled;
+    setVoiceEnabled(newState);
+    localStorage.setItem('ankiVoiceEnabled', newState.toString());
+  };
+  
+  // Speak message aloud using selected voice
+  const speakMessage = (message: string) => {
+    if (voiceEnabled && voiceSupport.speech) {
+      speakText(message, selectedVoice);
+    }
+  };
+  
+  // Updated addAnkiMessage to include voice output
+  const addAnkiMessageWithVoice = (message: string) => {
+    addAnkiMessage(message);
+    speakMessage(message);
+  };
+  
   return (
     <div 
       className={`w-full max-w-4xl mx-auto transition-all duration-500 rounded-lg overflow-hidden ${
         isVisible ? 'opacity-100 flex flex-col' : 'opacity-0 hidden'
       } ${isFullscreen ? 'h-full' : 'h-[80vh]'}`}
     >
+      {/* Voice Selector Modal */}
+      {showVoiceSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl">
+            <VoiceSelector 
+              onClose={() => setShowVoiceSelector(false)} 
+              onVoiceSelect={handleVoiceSelect}
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* Voice settings button */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <button
+          onClick={toggleVoiceOutput}
+          className={`p-2 rounded-full ${voiceEnabled ? 'bg-purple-600' : 'bg-slate-500'} 
+                    text-white hover:opacity-90 transition-all duration-300`}
+          title={voiceEnabled ? "Voice output enabled" : "Voice output disabled"}
+          disabled={!voiceSupport.speech}
+        >
+          <Volume2 size={16} />
+        </button>
+        
+        <button
+          onClick={() => setShowVoiceSelector(true)}
+          className="p-2 rounded-full bg-purple-600 text-white hover:opacity-90 transition-all duration-300"
+          title="Voice settings"
+        >
+          <Settings size={16} />
+        </button>
+      </div>
+      
       {/* Chat window with light grey background */}
       <div 
         className="flex-1 p-4 bg-slate-100 dark:bg-slate-800 overflow-y-auto"
