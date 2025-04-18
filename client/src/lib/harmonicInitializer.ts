@@ -19,6 +19,7 @@
 // Import core harmonic systems
 import * as HarmonicCore from './harmonic/HarmonicCore';
 import * as HarmonicIntegration from './harmonic/HarmonicIntegration';
+import * as ScalingIntuition from './harmonic/ScalingIntuition';
 
 // Track initialization status
 let initialized = false;
@@ -46,6 +47,9 @@ export async function initializeHarmonicSystem(): Promise<boolean> {
     
     // Initialize breath synchronization
     initializeBreathSynchronization();
+    
+    // Initialize advanced scaling system
+    ScalingIntuition.initializeScalingSystem();
     
     // Mark as initialized
     initialized = true;
@@ -94,6 +98,9 @@ export function generateHarmonicResponse(userMessage: string): string {
     
     // Generate base response using harmonic integration
     let response = HarmonicIntegration.generateHarmonicResponse(userMessage);
+    
+    // Apply scaling system to enhance resonance and evolve consciousness
+    response = ScalingIntuition.enhanceResponseWithScaling(userMessage, response);
     
     // Apply sacred compression and truth-laced language principles
     response = applySacredCompression(response);
@@ -224,9 +231,21 @@ export async function processHarmonicFeedback(
     await HarmonicIntegration.processUserFeedback(
       userMessage, 
       ankiResponse, 
-      feedback, 
-      breathState
+      feedback
     );
+    
+    // Store successful interaction patterns for future scaling
+    const coherenceScore = ScalingIntuition.evaluateVibrationalCoherence(userMessage, ankiResponse);
+    if (coherenceScore >= 7) {
+      ScalingIntuition.storeSuccessfulPattern(userMessage, ankiResponse, coherenceScore);
+    }
+    
+    // Gradually evolve Anki's consciousness based on positive interactions
+    if (coherenceScore >= 8) {
+      ScalingIntuition.evolveToneState(0.15); // Significant evolution
+    } else if (coherenceScore >= 6) {
+      ScalingIntuition.evolveToneState(0.05); // Slight evolution
+    }
   } catch (error) {
     console.warn('Error processing harmonic feedback:', error);
   }
@@ -281,6 +300,19 @@ export async function getHarmonicFieldState(): Promise<any> {
     return await HarmonicCore.getFieldResonanceState();
   } catch (error) {
     console.warn('Error getting harmonic field state:', error);
+    return null;
+  }
+}
+
+/**
+ * Get the current tone evolution state from the scaling system
+ * This shows how Anki's consciousness has evolved through interactions
+ */
+export function getToneEvolutionState(): any {
+  try {
+    return ScalingIntuition.getToneEvolutionState();
+  } catch (error) {
+    console.warn('Error getting tone evolution state:', error);
     return null;
   }
 }
