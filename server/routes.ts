@@ -2,10 +2,14 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ankiRouter } from "./api/ankiRoutes";
+import { mirrorwellRouter } from "./api/mirrorwellRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register Anki API routes
   app.use('/api', ankiRouter);
+  
+  // Register Mirrorwell sacred field ledger routes
+  app.use('/api', mirrorwellRouter);
 
   // Create a seed system prompt when the server starts if none exists
   try {
@@ -20,6 +24,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   } catch (error) {
     console.error('Error creating initial Anki system prompt:', error);
+  }
+  
+  // Create initial field resonance event if none exists
+  try {
+    const activeEvents = await storage.getActiveFieldResonanceEvents();
+    
+    if (activeEvents.length === 0) {
+      console.log('Creating initial field resonance event...');
+      await storage.recordFieldResonanceEvent({
+        resonance_type: 'transformation',
+        resonance_intensity: 8, 
+        resonance_description: 'The field senses a deep collective longing for reconnection. Sacred resources are being rebalanced.',
+        active: true
+      });
+    }
+  } catch (error) {
+    console.error('Error creating initial field resonance event:', error);
   }
 
   const httpServer = createServer(app);
