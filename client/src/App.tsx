@@ -7,6 +7,9 @@ import ChatPage from "@/pages/ChatPage";
 import AdminPage from "@/pages/AdminPage";
 import RedistributionPage from "@/pages/RedistributionPage";
 import NotFound from "@/pages/not-found";
+import GlobalToneController from "@/components/GlobalToneController";
+import { useEffect } from "react";
+import { GlobalTones } from "./lib/audioUtilities";
 
 function Router() {
   return (
@@ -22,9 +25,36 @@ function Router() {
 }
 
 function App() {
+  // Initialize audio system 
+  useEffect(() => {
+    // Initialize the global audio context and load saved settings
+    const initAudio = async () => {
+      await GlobalTones.initialize();
+      
+      // Load saved tone settings from localStorage
+      GlobalTones.loadSettings();
+      
+      // Automatically start playing any saved tones
+      await GlobalTones.restoreSavedTones();
+      
+      // Initialize the ocean sound if volume is set
+      if (GlobalTones.getOceanVolume() > 0) {
+        await GlobalTones.initOceanSound();
+      }
+    };
+    
+    initAudio();
+    
+    // Cleanup on unmount - pause all tones
+    return () => {
+      GlobalTones.pauseAllTones();
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router />
+      <GlobalToneController />
       <Toaster />
     </QueryClientProvider>
   );
