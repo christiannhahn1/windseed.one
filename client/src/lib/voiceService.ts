@@ -110,7 +110,7 @@ export function speakText(text: string, voiceId: string = 'feminine-warm'): void
   const volumeLevel = parseInt(localStorage.getItem('ankiVoiceVolume') || '80');
   const baseVolume = isMuted ? 0 : volumeLevel / 100;
   
-  // Process each sentence with slightly varied parameters for natural speech
+  // Process each sentence with human-like variations for natural, motherly speech
   sentences.forEach((sentence, i) => {
     // Create a new utterance for each sentence
     const utterance = new SpeechSynthesisUtterance(sentence.trim());
@@ -120,24 +120,39 @@ export function speakText(text: string, voiceId: string = 'feminine-warm'): void
       utterance.voice = preferredVoice;
     }
     
-    // Add natural variation to pitch and rate for each sentence
-    // This makes it sound more human and less monotone
+    // Add natural variation to pitch and rate for each sentence with more organic fluctuations
+    // This makes it sound more human, warm, and motherly - less robotic
     const pitchVariation = voiceConfig.pitchVariation || 0;
-    const rateVariation = 0.03; // Slight variation in speech rate
+    const rateVariation = 0.05; // More significant variation in speech rate for natural sound
     
-    utterance.pitch = voiceConfig.pitch + (Math.random() * 2 - 1) * pitchVariation;
-    utterance.rate = voiceConfig.rate + (Math.random() * 2 - 1) * rateVariation;
+    // Apply gentle randomness that mimics human speech patterns
+    const variation = Math.sin(i * 0.5) * 0.5 + (Math.random() * 0.5);
+    utterance.pitch = voiceConfig.pitch + variation * pitchVariation;
     
-    // Add volume variation based on sentence context (questions rise, statements fall)
+    // Slightly slow down for more warm, caring tone on important/meaningful phrases
+    const isEmotionalPhrase = /love|heart|feel|presence|breath|sacred|soul|truth|healing|peace/i.test(sentence);
+    const emotionalAdjustment = isEmotionalPhrase ? -0.05 : 0; // Slow down slightly on emotional words
+    
+    utterance.rate = voiceConfig.rate + (variation * rateVariation) + emotionalAdjustment;
+    
+    // Add volume variation based on sentence context with more subtle dynamics
     const volumeVariation = voiceConfig.volumeVariation || 0;
-    const volVar = (Math.random() * 2 - 1) * volumeVariation;
+    const volVar = Math.sin(i * 0.7) * volumeVariation * 0.7 + (Math.random() * volumeVariation * 0.3);
     
-    // Questions tend to rise in pitch and volume at the end
+    // Enhanced contextual adjustments for different sentence types
     if (sentence.trim().endsWith('?')) {
-      utterance.pitch += 0.05; // Slight rise for questions
+      // Questions tend to rise in pitch at the end
+      utterance.pitch += 0.07; // More noticeable rise for questions
+    } else if (/^(oh|ah|mmm|hmm|yes|no)/i.test(sentence.trim())) {
+      // Expressions tend to have more emotional variation
+      utterance.pitch += 0.04;
+      utterance.rate *= 0.95; // Slightly slower
+    } else if (sentence.trim().endsWith('!')) {
+      // Exclamations have more energy
+      utterance.volume = Math.min(1.0, baseVolume + 0.1);
     }
     
-    // Volume with natural variation
+    // Volume with more organic, human-like variation
     utterance.volume = Math.min(1.0, Math.max(0.1, baseVolume + volVar));
     
     // Add a slight delay between sentences for more natural speech rhythm
@@ -145,8 +160,15 @@ export function speakText(text: string, voiceId: string = 'feminine-warm'): void
       console.log('Speaking sentence', i + 1, 'of', sentences.length);
     };
     
-    // Queue this utterance
-    window.speechSynthesis.speak(utterance);
+    // Slight pause between sentences for natural cadence
+    if (i > 0) {
+      setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+      }, Math.random() * 100 + 50); // 50-150ms natural pause between sentences
+    } else {
+      // No delay for first sentence
+      window.speechSynthesis.speak(utterance);
+    }
   });
 }
 

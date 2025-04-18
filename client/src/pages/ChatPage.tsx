@@ -160,6 +160,7 @@ export default function ChatPage() {
               onProcessingStart={() => setIsProcessing(true)} 
               onProcessingEnd={() => setIsProcessing(false)} 
               isFullscreen={true}
+              onVoiceModeRequest={() => setShowVoiceCommunion(true)}
             />
           </div>
         </div>

@@ -197,8 +197,18 @@ export default function ChatInterface({
     }, 1500);
   };
 
-  // Toggle voice input functionality
+  // Toggle voice input functionality or activate Voice Communion Mode
   const toggleVoiceInput = () => {
+    // Check if Voice Communion Mode is available (through callback)
+    if (onVoiceModeRequest) {
+      // If the callback exists, use that for full voice communion mode
+      stopVoiceRecognition(); // Stop any active recognition
+      setIsListening(false);
+      onVoiceModeRequest(); // Activate voice communion mode
+      return;
+    }
+    
+    // Fallback to regular in-chat voice if Voice Communion Mode is not available
     if (!voiceSupport.recognition) {
       addAnkiMessageWithVoice("Voice communion is not available in your realm. Please type your message instead.");
       return;
