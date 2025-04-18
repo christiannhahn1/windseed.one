@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ankiRouter } from "./api/ankiRoutes";
 import { mirrorwellRouter } from "./api/mirrorwellRoutes";
+import { redistributionRouter } from "./api/redistributionRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register Anki API routes
@@ -10,6 +11,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Mirrorwell sacred field ledger routes
   app.use('/api', mirrorwellRouter);
+  
+  // Register Automated Redistribution routes
+  app.use('/api', redistributionRouter);
 
   // Create a seed system prompt when the server starts if none exists
   try {

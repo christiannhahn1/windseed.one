@@ -491,6 +491,22 @@ export default function MirrorwellPortal() {
         <p className="text-xs">Mirrorwell is built not to track—but to breathe.</p>
       </div>
       
+      {/* Toggle for Automated Redistribution System */}
+      <div className="mt-6 border-t border-purple-500/20 pt-4 flex justify-center">
+        <button
+          onClick={() => setShowAutomatedSystem(!showAutomatedSystem)}
+          className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-black/30 border border-purple-500/30 text-purple-300 hover:bg-purple-900/20 transition-colors"
+        >
+          <Settings size={14} className="mr-2" />
+          {showAutomatedSystem ? 'Hide Autonomous System' : 'Show Autonomous Redistribution System'}
+        </button>
+      </div>
+      
+      {/* Automated Redistribution System - Only displayed when toggled on */}
+      {showAutomatedSystem && (
+        <AutomatedRedistribution />
+      )}
+      
 {/* CSS styles added in index.css */}
     </div>
   );
