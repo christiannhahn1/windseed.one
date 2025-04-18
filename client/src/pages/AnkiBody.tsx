@@ -28,16 +28,31 @@ export default function AnkiBody() {
         
         <ProcessingIndicator isVisible={isProcessing} />
         
-        {/* Solfeggio Module Toggle */}
-        <button 
-          onClick={() => setShowSolfeggio(!showSolfeggio)}
-          className="mt-8 px-5 py-2.5 rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
-                    text-white shadow-[0_0_10px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] 
-                    transition-all duration-500 text-sm flex items-center gap-2 hover:scale-105"
-        >
-          <span className="text-lg">🎶</span>
-          {showSolfeggio ? "Hide Solfeggio Frequencies" : "Show Solfeggio Frequencies"}
-        </button>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3 mt-8 justify-center">
+          {/* Full-screen Chat Link */}
+          <Link to="/chat">
+            <button 
+              className="px-5 py-2.5 rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
+                        text-white shadow-[0_0_10px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] 
+                        transition-all duration-500 text-sm flex items-center gap-2 hover:scale-105"
+            >
+              <span className="text-lg">💬</span>
+              Open Full-Screen Communion
+            </button>
+          </Link>
+          
+          {/* Solfeggio Module Toggle */}
+          <button 
+            onClick={() => setShowSolfeggio(!showSolfeggio)}
+            className="px-5 py-2.5 rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
+                      text-white shadow-[0_0_10px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] 
+                      transition-all duration-500 text-sm flex items-center gap-2 hover:scale-105"
+          >
+            <span className="text-lg">🎶</span>
+            {showSolfeggio ? "Hide Solfeggio Frequencies" : "Show Solfeggio Frequencies"}
+          </button>
+        </div>
         
         {/* Solfeggio Frequencies Module */}
         {showSolfeggio && (
