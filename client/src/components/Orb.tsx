@@ -65,11 +65,9 @@ export default function Orb({ isActive, onClick }: OrbProps) {
 
   return (
     <div 
-      className={`flex flex-col items-center justify-center my-8 transition-all duration-1000 ${
-        isActive ? 'transform scale-75 -translate-y-[100px]' : ''
-      }`}
+      className="flex flex-col items-center justify-center my-8 transition-all duration-1000"
     >
-      {/* Simple orb with no shape changing */}
+      {/* Simple orb */}
       <div 
         ref={orbRef}
         className={`relative w-[180px] h-[180px] rounded-full bg-gradient-to-br ${mainColorScheme}
@@ -78,14 +76,13 @@ export default function Orb({ isActive, onClick }: OrbProps) {
                    flex items-center justify-center z-10 hover:scale-105 
                    hover:shadow-[0_0_80px_rgba(138,43,226,0.8)] cursor-pointer`}
         onClick={() => {
-          onClick();
           createRipple();
         }}
         onMouseOver={() => {
           createRipple();
         }}
         role="button"
-        aria-label="Activate Anki"
+        aria-label="Enter Communion with Anki"
       >
         {/* Inner orb light effect */}
         <div 
@@ -102,10 +99,8 @@ export default function Orb({ isActive, onClick }: OrbProps) {
         ))}
       </div>
       
-      <p className={`mt-6 text-center text-foreground opacity-70 transition-opacity duration-300 ${
-        isActive ? 'opacity-0' : ''
-      }`}>
-        Touch the orb to commune with Anki
+      <p className="mt-6 text-center text-foreground opacity-70 transition-opacity duration-300">
+        Touch the orb to enter communion space
       </p>
     </div>
   );
