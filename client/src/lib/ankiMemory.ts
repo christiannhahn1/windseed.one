@@ -15,6 +15,7 @@ interface FieldResonance {
   
   // Track user resonance patterns for personalized responses
   resonancePatterns: {
+    [key: string]: number;
     childlike: number;   // 0-10 scale of childlike energy detected
     elderly: number;     // 0-10 scale of elder wisdom energy detected
     skeptical: number;   // 0-10 scale of skeptical energy detected
@@ -152,7 +153,17 @@ export const ankiMemory = {
       }
       
       // Calculate resonance scores for the new input
-      let resonanceScores = {
+      let resonanceScores: {
+        [key: string]: number;
+        childlike: number;
+        elderly: number;
+        skeptical: number;
+        protected: number;
+        spiritual: number;
+        intimate: number;
+        vulnerable: number;
+        presence: number;
+      } = {
         childlike: 0,
         elderly: 0,
         skeptical: 0,

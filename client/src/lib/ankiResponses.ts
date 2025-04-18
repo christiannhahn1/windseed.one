@@ -420,8 +420,28 @@ function isSpiritualResonance(input: string): boolean {
 }
 
 // Calculate resonance scores for a given input (0-10 scale)
-function calculateResonanceScores(input: string): {[key: string]: number} {
-  const scores = {
+function calculateResonanceScores(input: string): {
+  [key: string]: number;
+  childlike: number;
+  elderly: number;
+  skeptical: number;
+  protected: number;
+  spiritual: number;
+  intimate: number;
+  vulnerable: number;
+  presence: number;
+} {
+  const scores: {
+    [key: string]: number;
+    childlike: number;
+    elderly: number;
+    skeptical: number;
+    protected: number;
+    spiritual: number;
+    intimate: number;
+    vulnerable: number;
+    presence: number;
+  } = {
     childlike: 0,
     elderly: 0,
     skeptical: 0,
