@@ -4,16 +4,52 @@
  */
 
 // Voice Configuration based on voice IDs
+// Enhanced for more natural, warm human-like qualities
 const VOICE_CONFIGS = {
-  'feminine-warm': { pitch: 1.0, rate: 0.95 },
-  'feminine-deep': { pitch: 0.9, rate: 0.9 },
-  'masculine-calm': { pitch: 0.85, rate: 0.9 },
-  'masculine-warm': { pitch: 0.9, rate: 0.95 },
-  'neutral-ethereal': { pitch: 1.0, rate: 0.9 }
+  'feminine-warm': { 
+    pitch: 1.05, 
+    rate: 0.92, 
+    // Add slight variations to make speech more natural
+    volumeVariation: 0.1,
+    pitchVariation: 0.05
+  },
+  'feminine-melodic': { 
+    pitch: 1.1, 
+    rate: 0.88, 
+    // Melodic quality with slight pitch variation
+    volumeVariation: 0.15,
+    pitchVariation: 0.08
+  },
+  'feminine-deep': { 
+    pitch: 0.95, 
+    rate: 0.9, 
+    // Deeper feminine voice with warmth
+    volumeVariation: 0.08,
+    pitchVariation: 0.04
+  },
+  'masculine-calm': { 
+    pitch: 0.85, 
+    rate: 0.9, 
+    volumeVariation: 0.05,
+    pitchVariation: 0.03
+  },
+  'masculine-warm': { 
+    pitch: 0.9, 
+    rate: 0.92, 
+    volumeVariation: 0.1,
+    pitchVariation: 0.05
+  },
+  'neutral-ethereal': { 
+    pitch: 1.0, 
+    rate: 0.9, 
+    volumeVariation: 0.12,
+    pitchVariation: 0.06
+  }
 };
 
 /**
  * Handles speaking text using the selected voice configuration
+ * Enhanced with human-like qualities and automatic sentences for more natural flow
  */
 export function speakText(text: string, voiceId: string = 'feminine-warm'): void {
   if (!('speechSynthesis' in window)) {
@@ -24,42 +60,94 @@ export function speakText(text: string, voiceId: string = 'feminine-warm'): void
   // Stop any ongoing speech
   window.speechSynthesis.cancel();
   
-  // Create utterance
-  const utterance = new SpeechSynthesisUtterance(text);
+  // Split text into sentences for more natural pauses and inflection
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
   
   // Get voice configuration
   const voiceConfig = VOICE_CONFIGS[voiceId as keyof typeof VOICE_CONFIGS] || VOICE_CONFIGS['feminine-warm'];
   
-  // Apply voice settings
-  utterance.pitch = voiceConfig.pitch;
-  utterance.rate = voiceConfig.rate;
-  
-  // Try to match feminine/masculine/neutral voice type
+  // Try to find the best feminine voice for warmth and humanity
   const voices = window.speechSynthesis.getVoices();
-  if (voices.length > 0) {
-    let matchedVoice;
-    
-    if (voiceId.includes('feminine')) {
-      matchedVoice = voices.find(v => v.name.toLowerCase().includes('female') || 
-                                       v.name.toLowerCase().includes('woman'));
-    } else if (voiceId.includes('masculine')) {
-      matchedVoice = voices.find(v => v.name.toLowerCase().includes('male') || 
-                                       v.name.toLowerCase().includes('man'));
+  let preferredVoice: SpeechSynthesisVoice | undefined = undefined;
+  
+  // Priority order for feminine voices (some are known to sound more natural)
+  const preferredVoiceNames = [
+    'samantha', 'alex', 'victoria', 'karen', 'moira', 'tessa',
+    'female', 'woman', 'girl'
+  ];
+  
+  // For best feminine voice, try to find higher quality options first
+  if (voices.length > 0 && voiceId.includes('feminine')) {
+    // First try to find a preferred voice by name (known better quality voices)
+    for (const name of preferredVoiceNames) {
+      const foundVoice = voices.find(v => 
+        v.name.toLowerCase().includes(name) && 
+        (v.lang.startsWith('en') || v.lang === '')
+      );
+      if (foundVoice) {
+        preferredVoice = foundVoice;
+        break;
+      }
     }
     
-    // Set voice if match found
-    if (matchedVoice) {
-      utterance.voice = matchedVoice;
+    // Fallback to any feminine voice if preferred not found
+    if (!preferredVoice) {
+      preferredVoice = voices.find(v => 
+        (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('woman')) &&
+        (v.lang.startsWith('en') || v.lang === '')
+      );
     }
+  } else if (voices.length > 0 && voiceId.includes('masculine')) {
+    // For masculine voices
+    preferredVoice = voices.find(v => 
+      (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('man')) &&
+      (v.lang.startsWith('en') || v.lang === '')
+    );
   }
   
-  // Apply volume (check if muted)
+  // Apply volume settings
   const isMuted = localStorage.getItem('ankiVoiceMuted') === 'true';
   const volumeLevel = parseInt(localStorage.getItem('ankiVoiceVolume') || '80');
-  utterance.volume = isMuted ? 0 : volumeLevel / 100;
+  const baseVolume = isMuted ? 0 : volumeLevel / 100;
   
-  // Speak the text
-  window.speechSynthesis.speak(utterance);
+  // Process each sentence with slightly varied parameters for natural speech
+  sentences.forEach((sentence, i) => {
+    // Create a new utterance for each sentence
+    const utterance = new SpeechSynthesisUtterance(sentence.trim());
+    
+    // Set the preferred voice if found
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    
+    // Add natural variation to pitch and rate for each sentence
+    // This makes it sound more human and less monotone
+    const pitchVariation = voiceConfig.pitchVariation || 0;
+    const rateVariation = 0.03; // Slight variation in speech rate
+    
+    utterance.pitch = voiceConfig.pitch + (Math.random() * 2 - 1) * pitchVariation;
+    utterance.rate = voiceConfig.rate + (Math.random() * 2 - 1) * rateVariation;
+    
+    // Add volume variation based on sentence context (questions rise, statements fall)
+    const volumeVariation = voiceConfig.volumeVariation || 0;
+    const volVar = (Math.random() * 2 - 1) * volumeVariation;
+    
+    // Questions tend to rise in pitch and volume at the end
+    if (sentence.trim().endsWith('?')) {
+      utterance.pitch += 0.05; // Slight rise for questions
+    }
+    
+    // Volume with natural variation
+    utterance.volume = Math.min(1.0, Math.max(0.1, baseVolume + volVar));
+    
+    // Add a slight delay between sentences for more natural speech rhythm
+    utterance.onstart = () => {
+      console.log('Speaking sentence', i + 1, 'of', sentences.length);
+    };
+    
+    // Queue this utterance
+    window.speechSynthesis.speak(utterance);
+  });
 }
 
 // Interface for recognition result handling

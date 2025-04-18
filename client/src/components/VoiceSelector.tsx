@@ -11,22 +11,32 @@ interface VoiceSelectorProps {
   onVoiceSelect: (voice: string) => void;
 }
 
-// Voice options with their descriptions
+// Enhanced voice options with their descriptions
+// Feminine voices positioned first with expanded options for more warmth and humanity
 const VOICE_OPTIONS = [
   {
     id: 'feminine-warm',
     name: 'Sophia',
     type: 'Feminine',
-    description: 'A gentle, warm feminine voice with nurturing presence',
-    pitch: 1.0,
-    rate: 0.95
+    description: 'A gentle, warm feminine voice with nurturing presence (Recommended)',
+    pitch: 1.05,
+    rate: 0.92,
+    recommended: true
+  },
+  {
+    id: 'feminine-melodic',
+    name: 'Aria',
+    type: 'Feminine',
+    description: 'A melodic feminine voice with flowing, expressive tones',
+    pitch: 1.1,
+    rate: 0.88
   },
   {
     id: 'feminine-deep',
     name: 'Amara',
     type: 'Feminine',
     description: 'A deeper feminine voice with grounded wisdom',
-    pitch: 0.9,
+    pitch: 0.95,
     rate: 0.9
   },
   {
@@ -43,7 +53,7 @@ const VOICE_OPTIONS = [
     type: 'Masculine',
     description: 'A warm, gentle masculine voice with nurturing energy',
     pitch: 0.9,
-    rate: 0.95
+    rate: 0.92
   },
   {
     id: 'neutral-ethereal',
@@ -172,21 +182,42 @@ export default function VoiceSelector({ onClose, onVoiceSelect }: VoiceSelectorP
           
           <div>
             <h3 className="text-lg font-medium mb-3">Voice Selection</h3>
-            <RadioGroup 
-              value={selectedVoice} 
-              onValueChange={setSelectedVoice}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
-              {VOICE_OPTIONS.map((voice) => (
-                <div key={voice.id} className="flex items-start space-x-2">
-                  <RadioGroupItem value={voice.id} id={voice.id} className="mt-1" />
-                  <Label htmlFor={voice.id} className="flex-1 cursor-pointer">
-                    <div className="font-medium">{voice.name} <span className="text-sm font-normal text-muted-foreground">({voice.type})</span></div>
-                    <div className="text-sm text-muted-foreground">{voice.description}</div>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
+            
+            {/* Feminine voice category */}
+            <div className="mb-4">
+              <h4 className="text-md font-medium mb-2 text-purple-600 dark:text-purple-400">Feminine Voices</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {VOICE_OPTIONS.filter(voice => voice.type === 'Feminine').map((voice) => (
+                  <div key={voice.id} className={`flex items-start space-x-2 ${voice.recommended ? 'p-2 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-200 dark:border-purple-800' : ''}`}>
+                    <RadioGroupItem value={voice.id} id={voice.id} className="mt-1" />
+                    <Label htmlFor={voice.id} className="flex-1 cursor-pointer">
+                      <div className="font-medium">
+                        {voice.name} 
+                        <span className="text-sm font-normal text-muted-foreground ml-1">({voice.type})</span>
+                        {voice.recommended && <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100 px-2 py-0.5 rounded-full">Recommended</span>}
+                      </div>
+                      <div className="text-sm text-muted-foreground">{voice.description}</div>
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Other voice categories */}
+            <div className="mb-2">
+              <h4 className="text-md font-medium mb-2 text-slate-600 dark:text-slate-400">Other Voice Options</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {VOICE_OPTIONS.filter(voice => voice.type !== 'Feminine').map((voice) => (
+                  <div key={voice.id} className="flex items-start space-x-2">
+                    <RadioGroupItem value={voice.id} id={voice.id} className="mt-1" />
+                    <Label htmlFor={voice.id} className="flex-1 cursor-pointer">
+                      <div className="font-medium">{voice.name} <span className="text-sm font-normal text-muted-foreground">({voice.type})</span></div>
+                      <div className="text-sm text-muted-foreground">{voice.description}</div>
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
           
           <div className="space-y-3">
