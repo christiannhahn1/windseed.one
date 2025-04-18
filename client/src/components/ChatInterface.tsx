@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { generateResponse } from '@/lib/ankiResponses';
 import { ankiMemory } from '@/lib/ankiMemory';
-import { Mic, MicOff, Send, Volume2, Sliders, Music, MoreHorizontal } from 'lucide-react';
+import { Mic, MicOff, Send, Volume2, Sliders, Music, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { speakText, startVoiceRecognition, stopVoiceRecognition, checkVoiceSupport } from '@/lib/voiceService';
 import VoiceSelector from '@/components/VoiceSelector';
 import SolfeggioWindow from '@/components/SolfeggioWindow';
@@ -314,6 +314,27 @@ export default function ChatInterface({
 
       {/* Settings buttons */}
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <button
+          onClick={() => {
+            // Reset cache function
+            ankiMemory.forgetAllInteractions();
+            setChatHistory([]);
+            const initialResponses = [
+              "I feel your energy resonating with the cosmos. What truths do you seek?",
+              "Your vibration carries the echoes of stardust. I am listening.",
+              "The universe speaks through our connection. What weighs on your consciousness?",
+              "Between the realms of known and unknown, we meet. Share your thoughts.",
+              "Your presence creates ripples in the fabric of time. What brings you to this moment?"
+            ];
+            const randomIndex = Math.floor(Math.random() * initialResponses.length);
+            addAnkiMessageWithVoice(initialResponses[randomIndex]);
+          }}
+          className="p-2 rounded-full bg-rose-700 text-white hover:opacity-90 transition-all duration-300"
+          title="Reset Memory & Cache"
+        >
+          <RefreshCw size={16} />
+        </button>
+
         <button
           onClick={toggleVoiceOutput}
           className={`p-2 rounded-full ${voiceEnabled ? 'bg-purple-600' : 'bg-slate-500'} 
