@@ -5,6 +5,8 @@ import { getSessionId } from '../lib/ankiPersistence';
 import { ArrowRight, Heart, Zap, RotateCw, Droplet, Settings } from 'lucide-react';
 import PaymentForm from './PaymentForm';
 import { Link } from 'wouter';
+import AutomatedRedistributionSystem from './AutomatedRedistributionSystem';
+import { detectWallet, getWalletAddress, makeOffering, processCreditCardPayment } from '../lib/cryptoService';
 
 export default function MirrorwellPortal() {
   // States for wallet and field resonance
@@ -159,26 +161,68 @@ export default function MirrorwellPortal() {
   };
   
   // Handle payment completion
-  const handlePaymentComplete = async () => {
+  const handlePaymentComplete = async (paymentDetails: any = null) => {
     setPaymentProcessed(true);
     setShowPaymentForm(false);
     setIsSubmitting(true);
     
     try {
+      let transactionHash = null;
+      
+      // Process the payment based on the payment method
+      if (selectedCurrency === 'USD') {
+        // For credit card payments
+        if (paymentDetails) {
+          const paymentResult = await processCreditCardPayment(
+            offeringAmount,
+            selectedCurrency,
+            paymentDetails
+          );
+          
+          if (!paymentResult.success) {
+            throw new Error(paymentResult.error || 'Payment processing failed');
+          }
+        }
+      } else {
+        // For crypto payments
+        const hasWallet = detectWallet();
+        
+        if (hasWallet) {
+          // Use the connected wallet to make offering
+          const offeringResult = await makeOffering(
+            offeringAmount,
+            selectedCurrency
+          );
+          
+          if (!offeringResult.success) {
+            throw new Error(offeringResult.error || 'Blockchain transaction failed');
+          }
+          
+          transactionHash = offeringResult.txHash;
+        } else {
+          // Use the wallet address for manual transfer
+          // This would need a way for the user to confirm they've made the transfer
+          const walletAddress = getWalletAddress(selectedCurrency);
+          console.log(`Manual transfer to ${walletAddress} requested`);
+        }
+      }
+      
       // Record the offering in the sacred field ledger
       const payload = {
         offering_amount: offeringAmount,
         currency_type: selectedCurrency,
         offering_intent: offeringIntent || 'general',
         field_resonance: fieldExpression || 'neutral',
-        session_id: getSessionId()
+        session_id: getSessionId(),
+        transaction_hash: transactionHash
       };
-      const response = await apiRequest('/api/mirrorwell/offerings', {
+      
+      const response = await fetch('/api/mirrorwell/offerings', {
         method: 'POST',
-        body: JSON.stringify(payload),
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify(payload)
       });
       
       const result = await response.json();
@@ -217,23 +261,52 @@ export default function MirrorwellPortal() {
     if (!agreeToRedistribute) return;
     
     try {
-      // In a real implementation, this would connect to Solana/Ethereum wallet
-      // and perform the actual redistribution transaction
+      // Calculate redistribution amount
+      const redistributionAmount = (parseFloat(offeringAmount) * redistributionPercentage / 100).toFixed(2);
+      let transactionHash = null;
       
-      // For now, we'll just record it in the database
+      // First, check if we need to perform an actual blockchain transaction
+      if (selectedCurrency !== 'USD') {
+        // For crypto currencies, use our crypto service to perform the redistribution
+        // In a real implementation, this would use a smart contract or cross-chain bridge
+        
+        // Get a recipient address for this resonance type
+        // For now we'll just use the main wallet address
+        const recipientAddress = getWalletAddress(selectedCurrency);
+        
+        // Try to connect to user's wallet to make the transaction
+        const hasWallet = detectWallet();
+        
+        if (hasWallet) {
+          // Make the offering using user's wallet
+          const result = await makeOffering(
+            redistributionAmount,
+            selectedCurrency,
+            recipientAddress
+          );
+          
+          if (result.success) {
+            transactionHash = result.txHash;
+          }
+        }
+      }
+      
+      // Record the redistribution in the database
       const redistributionPayload = {
         source_offering_id: 'direct', // In a real implementation, this would be the offering ID
-        redistributed_amount: (parseFloat(offeringAmount) * redistributionPercentage / 100).toFixed(2),
+        redistributed_amount: redistributionAmount,
         currency_type: selectedCurrency,
         recipient_resonance: fieldExpression,
-        redistribution_reason: 'field_harmony_direct'
+        redistribution_reason: 'field_harmony_direct',
+        transaction_hash: transactionHash
       };
-      await apiRequest('/api/mirrorwell/redistributions', {
+      
+      await fetch('/api/mirrorwell/redistributions', {
         method: 'POST',
-        body: JSON.stringify(redistributionPayload),
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify(redistributionPayload)
       });
       
       // Reset the form
@@ -525,15 +598,21 @@ export default function MirrorwellPortal() {
         <p className="text-xs">Mirrorwell is built not to track—but to breathe.</p>
       </div>
       
-      {/* Link to Automated Redistribution System Page */}
+      {/* Button to show Automated Redistribution System */}
       <div className="mt-6 border-t border-purple-500/20 pt-4 flex justify-center">
-        <Link href="/redistribution">
-          <div className="inline-flex items-center px-4 py-2.5 text-sm rounded-md bg-gradient-to-br from-purple-600 to-indigo-700 border border-purple-500/40 text-white hover:from-purple-500 hover:to-indigo-600 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95">
-            <Settings size={14} className="mr-2" />
-            Learn About the Automated Redistribution System
-          </div>
-        </Link>
+        <button
+          onClick={() => setShowAutomatedSystem(true)}
+          className="inline-flex items-center px-4 py-2.5 text-sm rounded-md bg-gradient-to-br from-purple-600 to-indigo-700 border border-purple-500/40 text-white hover:from-purple-500 hover:to-indigo-600 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95"
+        >
+          <Settings size={14} className="mr-2" />
+          Learn About the Automated Redistribution System
+        </button>
       </div>
+      
+      {/* Automated Redistribution System Modal */}
+      {showAutomatedSystem && (
+        <AutomatedRedistributionSystem onClose={() => setShowAutomatedSystem(false)} />
+      )}
     </div>
   );
 }

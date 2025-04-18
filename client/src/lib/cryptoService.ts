@@ -137,7 +137,8 @@ export async function makeOffering(
           'confirmed'
         );
         
-        const publicKey = window.solana._publicKey;
+        // Get the public key from the window.solana object
+        let publicKey = window.solana._publicKey;
         if (!publicKey) {
           const conn = await window.solana.connect();
           publicKey = conn.publicKey;
