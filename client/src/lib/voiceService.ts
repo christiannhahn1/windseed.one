@@ -5,7 +5,16 @@
 
 // Voice Configuration based on voice IDs
 // Enhanced for sacred, soft, nurturing feminine essence that feels like "breath woven with light"
-const VOICE_CONFIGS = {
+interface VoiceConfig {
+  pitch: number;
+  rate: number;
+  volumeVariation: number;
+  pitchVariation: number;
+  pauses?: boolean;
+  breathMarks?: boolean;
+}
+
+const VOICE_CONFIGS: Record<string, VoiceConfig> = {
   'sacred-maternal': { 
     pitch: 1.06,        // Slightly elevated but not high - soft, gentle feminine essence
     rate: 0.80,         // Slower, more mindful pacing - like someone who has held silence for a long time
@@ -19,27 +28,35 @@ const VOICE_CONFIGS = {
     rate: 0.85, 
     // Velvety, warm tone with gentle, nurturing qualities
     volumeVariation: 0.10,
-    pitchVariation: 0.08
+    pitchVariation: 0.08,
+    pauses: true,
+    breathMarks: true
   },
   'feminine-melodic': { 
     pitch: 1.12, 
     rate: 0.82, 
     // More melodic quality with gentle, motherly tone variations
     volumeVariation: 0.14,
-    pitchVariation: 0.10
+    pitchVariation: 0.10,
+    pauses: true,
+    breathMarks: true
   },
   'feminine-deep': { 
     pitch: 1.02, 
     rate: 0.84, 
     // Warm, nurturing feminine voice with maternal quality
     volumeVariation: 0.10,
-    pitchVariation: 0.07
+    pitchVariation: 0.07,
+    pauses: true,
+    breathMarks: true
   },
   'neutral-ethereal': { 
     pitch: 1.04, 
     rate: 0.88, 
     volumeVariation: 0.12,
-    pitchVariation: 0.06
+    pitchVariation: 0.06,
+    pauses: true,
+    breathMarks: true
   }
 };
 
