@@ -276,3 +276,26 @@
     opacity: 1;
   }
 }
+
+/* Voice communion mode animations */
+@keyframes monkBreathFast {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes orbPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: blur(12px);
+  }
+  50% {
+    transform: scale(1.05);
+    filter: blur(14px);
+  }
+}

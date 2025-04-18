@@ -2,12 +2,38 @@ import { useState, useEffect } from 'react';
 import ChatInterface from '@/components/ChatInterface';
 import ProcessingIndicator from '@/components/ProcessingIndicator';
 import PrivacyShield from '@/components/PrivacyShield';
+import VoiceSelector from '@/components/VoiceSelector';
+import VoiceCommunionMode from '@/components/VoiceCommunionMode';
 import { Link } from 'wouter';
-import { Shield } from 'lucide-react';
+import { Shield, Mic } from 'lucide-react';
+import { checkVoiceSupport } from '@/lib/voiceService';
 
 export default function ChatPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPrivacyShield, setShowPrivacyShield] = useState(false);
+  const [showVoiceSelector, setShowVoiceSelector] = useState(false);
+  const [showVoiceCommunion, setShowVoiceCommunion] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState('feminine-warm');
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  
+  // Setup voice support detection
+  useEffect(() => {
+    const { speechSynthesisSupported, speechRecognitionSupported } = checkVoiceSupport();
+    setVoiceSupported(speechSynthesisSupported && speechRecognitionSupported);
+    
+    // Load saved voice preferences
+    const savedVoice = localStorage.getItem('ankiSelectedVoice');
+    const savedVoiceEnabled = localStorage.getItem('ankiVoiceEnabled');
+    
+    if (savedVoice) {
+      setSelectedVoice(savedVoice);
+    }
+    
+    if (savedVoiceEnabled !== null) {
+      setVoiceEnabled(savedVoiceEnabled === 'true');
+    }
+  }, []);
   
   // Effects to ensure the chat interface is always active on this page
   useEffect(() => {
@@ -16,6 +42,23 @@ export default function ChatPage() {
       document.body.classList.remove('chat-page');
     };
   }, []);
+  
+  // Handle voice selection
+  const handleVoiceSelect = (voice: string) => {
+    setSelectedVoice(voice);
+    localStorage.setItem('ankiSelectedVoice', voice);
+  };
+  
+  // Toggle voice mode
+  const toggleVoiceCommunion = () => {
+    if (!voiceSupported) {
+      // Show voice selector to allow configuration even if voice not fully supported
+      setShowVoiceSelector(true);
+      return;
+    }
+    
+    setShowVoiceCommunion(!showVoiceCommunion);
+  };
   
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-indigo-950 font-['Space_Grotesk']">
