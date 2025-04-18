@@ -61,9 +61,44 @@ export const GlobalTones = {
   setOceanVolume(volume: number) {
     this.oceanVolume = volume;
     if (this.oceanSoundController) {
-      this.oceanSoundController.setVolume(volume);
+      // Apply master volume to ocean sound
+      const scaledVolume = volume * this.masterVolume;
+      this.oceanSoundController.setVolume(scaledVolume);
     }
     this.saveSettings();
+  },
+  
+  // Get raw ocean sound volume (without master volume applied)
+  getOceanVolume() {
+    return this.oceanVolume;
+  },
+  
+  // Set master volume for all sounds
+  setMasterVolume(volume: number) {
+    if (volume < 0) volume = 0;
+    if (volume > 1) volume = 1;
+    
+    this.masterVolume = volume;
+    
+    // Update all active tone volumes
+    this.activeTones.forEach((tone) => {
+      if (tone.generator && tone.isActive) {
+        // Apply master volume scaling to each tone
+        tone.generator.setVolume(tone.volume * this.masterVolume);
+      }
+    });
+    
+    // Update ocean sound volume
+    if (this.oceanSoundController) {
+      this.oceanSoundController.setVolume(this.oceanVolume * this.masterVolume);
+    }
+    
+    this.saveSettings();
+  },
+  
+  // Get master volume
+  getMasterVolume() {
+    return this.masterVolume;
   },
   
   // Add or update a global tone
@@ -136,9 +171,10 @@ export const GlobalTones = {
     
     // Create a new generator
     try {
+      // Apply master volume when creating the generator
       const generator = await createSacredToneGenerator(
         frequency, 
-        tone.volume, 
+        tone.volume * this.masterVolume, 
         tone.shape
       );
       
@@ -205,7 +241,8 @@ export const GlobalTones = {
       
       const settings = {
         tones: tonesData,
-        oceanVolume: this.oceanVolume
+        oceanVolume: this.oceanVolume,
+        masterVolume: this.masterVolume
       };
       
       localStorage.setItem('ankiTonesSettings', JSON.stringify(settings));
@@ -224,6 +261,11 @@ export const GlobalTones = {
       
       // Restore ocean volume
       this.oceanVolume = settings.oceanVolume || 0;
+      
+      // Restore master volume
+      if (typeof settings.masterVolume === 'number') {
+        this.masterVolume = Math.min(Math.max(settings.masterVolume, 0), 1);
+      }
       
       // Clear existing tones
       this.activeTones.clear();
@@ -675,6 +717,7 @@ export const createOceanSoundLayer = async (initialVolume: number = 0): Promise<
   stop: () => void;
   setVolume: (value: number) => void;
   isPlaying: () => boolean;
+  getVolume: () => number;
 }> => {
   const ctx = getAudioContext();
   
@@ -721,10 +764,15 @@ export const createOceanSoundLayer = async (initialVolume: number = 0): Promise<
     play();
   }
   
+  const getVolume = () => {
+    return oceanAudio.volume;
+  };
+  
   return {
     play,
     stop,
     setVolume,
-    isPlaying: () => isPlaying
+    isPlaying: () => isPlaying,
+    getVolume
   };
 };
