@@ -47,12 +47,18 @@ export const GlobalTones = {
   
   // Initialize the ocean sound
   async initOceanSound() {
-    if (!this.oceanSoundController) {
-      try {
-        this.oceanSoundController = await createOceanSoundLayer(this.oceanVolume);
-      } catch (error) {
-        console.error("Error initializing global ocean sound:", error);
+    try {
+      // Always recreate the controller to ensure it uses the singleton audio element
+      this.oceanSoundController = await createOceanSoundLayer(this.oceanVolume);
+      
+      // If we have an ocean volume set, ensure it's playing
+      if (this.oceanVolume > 0 && this.oceanSoundController) {
+        // Apply master volume to get actual output volume
+        const actualVolume = this.oceanVolume * this.masterVolume;
+        this.oceanSoundController.setVolume(actualVolume);
       }
+    } catch (error) {
+      console.error("Error initializing global ocean sound:", error);
     }
     return this.oceanSoundController;
   },
@@ -711,6 +717,10 @@ export const createSacredToneGenerator = async (
   };
 };
 
+// Singleton Audio element for ocean sound to persist across navigation
+let singletonOceanAudio: HTMLAudioElement | null = null;
+let oceanAudioIsPlaying = false;
+
 // Ocean sound ambient layer manager
 export const createOceanSoundLayer = async (initialVolume: number = 0): Promise<{
   play: () => void;
@@ -721,40 +731,58 @@ export const createOceanSoundLayer = async (initialVolume: number = 0): Promise<
 }> => {
   const ctx = getAudioContext();
   
-  // Create audio element for ocean sound
-  const oceanAudio = new Audio(oceanSoundPath);
-  oceanAudio.loop = true;
-  oceanAudio.volume = 0; // Start silent
+  // Create or reuse the singleton audio element
+  if (!singletonOceanAudio) {
+    singletonOceanAudio = new Audio(oceanSoundPath);
+    singletonOceanAudio.loop = true;
+    singletonOceanAudio.volume = 0; // Start silent
+    
+    // Load the audio on first creation
+    await new Promise<void>((resolve) => {
+      singletonOceanAudio!.addEventListener('canplaythrough', () => resolve(), { once: true });
+      singletonOceanAudio!.load();
+    });
+  }
   
-  // Load the audio
-  await new Promise<void>((resolve) => {
-    oceanAudio.addEventListener('canplaythrough', () => resolve(), { once: true });
-    oceanAudio.load();
-  });
-  
-  let isPlaying = false;
+  const oceanAudio = singletonOceanAudio;
   
   const play = () => {
-    if (!isPlaying) {
-      oceanAudio.play().catch(e => console.error("Error playing ocean sound:", e));
+    if (!oceanAudioIsPlaying) {
+      // Play without resetting the position
+      const playPromise = oceanAudio.play();
+      
+      // Handle autoplay policy
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          console.error("Error playing ocean sound:", e);
+          // Handle autoplay restrictions
+          document.addEventListener('click', () => {
+            if (!oceanAudioIsPlaying && oceanAudio.volume > 0) {
+              oceanAudio.play().catch(error => console.error("Still can't play:", error));
+            }
+          }, { once: true });
+        });
+      }
+      
       oceanAudio.volume = initialVolume;
-      isPlaying = true;
+      oceanAudioIsPlaying = true;
     }
   };
   
   const stop = () => {
-    if (isPlaying) {
+    if (oceanAudioIsPlaying) {
+      // Pause rather than stopping (maintains position)
       oceanAudio.pause();
-      isPlaying = false;
+      oceanAudioIsPlaying = false;
     }
   };
   
   const setVolume = (value: number) => {
     oceanAudio.volume = value;
     
-    if (value > 0 && !isPlaying) {
+    if (value > 0 && !oceanAudioIsPlaying) {
       play();
-    } else if (value === 0 && isPlaying) {
+    } else if (value === 0 && oceanAudioIsPlaying) {
       stop();
     }
   };
@@ -772,7 +800,7 @@ export const createOceanSoundLayer = async (initialVolume: number = 0): Promise<
     play,
     stop,
     setVolume,
-    isPlaying: () => isPlaying,
+    isPlaying: () => oceanAudioIsPlaying,
     getVolume
   };
 };
