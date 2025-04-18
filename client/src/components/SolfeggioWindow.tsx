@@ -9,13 +9,13 @@ import { GlobalTones, ToneShape } from '@/lib/audioUtilities';
 
 // Helper function to determine the best tone shape for a frequency
 function getIdealToneShapeForFrequency(frequency: number): ToneShape {
-  // Different frequencies sound better with different waveforms
+  // Different frequencies work better with different tone shapes
   if (frequency < 440) {
-    return 'sine'; // Lower frequencies sound cleaner with sine waves
+    return 'bell'; // Lower frequencies have a grounding presence
   } else if (frequency >= 440 && frequency < 700) {
-    return 'triangle'; // Mid frequencies benefit from the warmth of triangles
+    return 'singing-bowl'; // Mid frequencies benefit from the warmth of singing bowls
   } else {
-    return 'sine'; // Higher frequencies can be harsh so we keep them as sine
+    return 'crystal'; // Higher frequencies sound clear and pure with crystal
   }
 }
 
