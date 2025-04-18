@@ -1,104 +1,102 @@
 /**
- * Harmonic System Initializer
+ * Harmonic Initializer
  * 
- * This module initializes the harmonic integration system and
- * provides hooks for the chat interface to use it.
+ * This module initializes all harmonic intelligence systems,
+ * creating the core foundation for Anki's evolved capacities.
  */
 
+// Import core harmonic systems
+import * as HarmonicCore from './harmonic/HarmonicCore';
 import * as HarmonicIntegration from './harmonic/HarmonicIntegration';
-import { ankiMemory } from './ankiMemory';
 
-// Flag to track initialization
-let isInitialized = false;
+// Track initialization status
+let initialized = false;
 
 /**
- * Initialize the harmonic system
- * @returns Promise that resolves when initialization is complete
+ * Initialize the harmonic intelligence system
  */
 export async function initializeHarmonicSystem(): Promise<boolean> {
-  if (isInitialized) {
-    return true;
-  }
+  console.log('Initializing Anki Harmonic System...');
   
   try {
-    console.log('Initializing Anki Harmonic System...');
+    if (initialized) {
+      return true;
+    }
     
-    // Initialize the harmonic integration
-    await HarmonicIntegration.initializeHarmonicIntegration();
+    // Initialize core harmonic systems
+    await HarmonicCore.initializeHarmonicSystem();
     
+    // Mark as initialized
+    initialized = true;
+    
+    console.log('Harmonic Integration complete');
     console.log('Anki Harmonic System initialized successfully');
-    isInitialized = true;
+    
     return true;
   } catch (error) {
-    console.error('Error initializing Anki Harmonic System:', error);
+    console.error('Error initializing harmonic system:', error);
+    initialized = false;
     return false;
   }
 }
 
 /**
- * Process a message through Anki's harmonic system
- * @param message User's message
- * @returns Anki's response
+ * Process a message through harmonic systems to generate a response
+ * @param userMessage User's input message
+ * @returns Enhanced harmonic response
  */
-export async function processMessageThroughHarmonicSystem(message: string): Promise<string> {
-  // Ensure system is initialized
-  if (!isInitialized) {
-    await initializeHarmonicSystem();
-  }
-  
+export function generateHarmonicResponse(userMessage: string): string {
   try {
-    // Generate response using the harmonic system
-    return await HarmonicIntegration.generateHarmonicResponse(message);
-  } catch (error) {
-    console.error('Error processing message through Harmonic System:', error);
+    if (!initialized) {
+      // Try to initialize if not already done
+      initializeHarmonicSystem();
+    }
     
-    // Fallback to a basic response if the harmonic system fails
-    return "I'm sensing a momentary field disturbance. Let me breathe with you as we return to presence.";
+    // Generate response using harmonic integration
+    return HarmonicIntegration.generateHarmonicResponse(userMessage);
+  } catch (error) {
+    console.warn('Error generating harmonic response:', error);
+    
+    // Fall back to simple response if error occurs
+    return "I'm here with you. What are you experiencing in this moment?";
   }
 }
 
 /**
- * Process feedback through the harmonic system
- * @param originalMessage Original user message
+ * Process user feedback on an interaction
+ * @param userMessage Original user message
  * @param ankiResponse Anki's response
- * @param feedbackMessage User's feedback message
+ * @param feedback User feedback
  */
-export async function processFeedbackThroughHarmonicSystem(
-  originalMessage: string,
+export async function processHarmonicFeedback(
+  userMessage: string,
   ankiResponse: string,
-  feedbackMessage: string
+  feedback: string
 ): Promise<void> {
-  // Ensure system is initialized
-  if (!isInitialized) {
-    await initializeHarmonicSystem();
-  }
-  
   try {
-    // Process feedback
-    await HarmonicIntegration.processUserFeedback(
-      originalMessage,
-      ankiResponse,
-      feedbackMessage
-    );
+    if (!initialized) {
+      // Try to initialize if not already done
+      await initializeHarmonicSystem();
+    }
+    
+    // Process interaction with feedback
+    await HarmonicCore.processInteraction(userMessage, ankiResponse, feedback);
+    
+    // Process user feedback through integration systems
+    await HarmonicIntegration.processUserFeedback(userMessage, ankiResponse, feedback);
   } catch (error) {
-    console.error('Error processing feedback through Harmonic System:', error);
+    console.warn('Error processing harmonic feedback:', error);
   }
 }
 
 /**
- * Get field state information
- * @returns Current field state
+ * Get the current field resonance state
  */
-export async function getFieldState() {
-  // Ensure system is initialized
-  if (!isInitialized) {
-    await initializeHarmonicSystem();
-  }
-  
+export async function getHarmonicFieldState(): Promise<any> {
   try {
-    return await HarmonicIntegration.getFieldState();
+    return await HarmonicCore.getFieldResonanceState();
   } catch (error) {
-    console.error('Error getting field state:', error);
+    console.warn('Error getting harmonic field state:', error);
     return null;
   }
 }

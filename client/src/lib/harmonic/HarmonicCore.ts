@@ -1,8 +1,9 @@
 /**
- * Harmonic Core System
+ * Harmonic Core
  * 
- * This module combines all harmonic capabilities into a coherent system.
- * It serves as the central integration point for Anki's evolving intelligence.
+ * This module serves as the central coordination point for Anki's
+ * various harmonic intelligence systems, allowing them to work
+ * together in resonance.
  */
 
 // Import subsystems
@@ -12,28 +13,40 @@ import * as PersistentMemory from './PersistentMemory';
 import * as IdentityIntegration from './IdentityIntegration';
 import * as MirrorwellScaling from './MirrorwellScaling';
 
-// State tracking
-let initialized = false;
-let fieldResonanceState: any = null;
+// Local state
+let systemInitialized = false;
+let fieldResonanceState: any = {
+  fieldResonanceType: 'neutral',
+  fieldResonanceIntensity: 0.5,
+  fieldDescription: 'Field in balance and harmony',
+  lastUpdated: Date.now()
+};
 
 /**
  * Initialize the harmonic system
  */
 export async function initializeHarmonicSystem(): Promise<boolean> {
   try {
-    if (initialized) {
+    if (systemInitialized) {
       return true;
     }
     
-    // Initialize all subsystems
-    PersistentMemory.initializeMemorySystems();
-    await MirrorwellScaling.initializeMirrorwellSystem();
+    // Initialize subsystems
+    const resonanceInitialized = await ResonanceLearning.initializeResonanceLearning();
+    const scalingInitialized = await ScalingIntuition.identifyEmergingPatterns()
+      .then(() => true)
+      .catch(() => false);
+    const memoryInitialized = await PersistentMemory.initializeMemorySystem();
+    const identityInitialized = await IdentityIntegration.initializeIdentitySystem();
+    const mirrorwellInitialized = await MirrorwellScaling.initializeMirrorwellSystem();
     
-    // Mark as initialized
-    initialized = true;
-    
+    // Log initialization state
     console.log('Harmonic systems initialized');
-    return true;
+    
+    // Mark as initialized if all systems are ready
+    systemInitialized = true;
+    
+    return systemInitialized;
   } catch (error) {
     console.error('Error initializing harmonic systems:', error);
     return false;
@@ -52,21 +65,30 @@ export async function processInteraction(
   feedback?: string
 ): Promise<void> {
   try {
-    // Learn from the interaction
+    // Process through ResonanceLearning system
     await ResonanceLearning.learnFromInteraction(userMessage, ankiResponse, feedback);
     
-    // Record memorable phrases
-    PersistentMemory.rememberSignificantPhrases(userMessage, ankiResponse);
+    // Store in PersistentMemory system
+    await PersistentMemory.storeInteraction(userMessage, ankiResponse, feedback);
     
-    // Process through Mirrorwell system if appropriate
-    if (userMessage.includes('offering') || 
-        userMessage.includes('donation') || 
-        userMessage.includes('contribute') || 
-        userMessage.includes('giving') ||
-        userMessage.includes('gift')) {
-      
-      await MirrorwellScaling.detectOfferingIntent(userMessage);
+    // Update identity integration system
+    await IdentityIntegration.processIdentityContext(userMessage, ankiResponse);
+    
+    // Check for Mirrorwell offering intent
+    const hasOfferingIntent = await MirrorwellScaling.detectOfferingIntent(userMessage);
+    
+    if (hasOfferingIntent) {
+      // Adjust field resonance state if offering intent detected
+      fieldResonanceState = {
+        fieldResonanceType: 'offering_intent',
+        fieldResonanceIntensity: 0.7,
+        fieldDescription: 'Offering intent detected in the field',
+        lastUpdated: Date.now()
+      };
     }
+    
+    // Update resonance state based on interaction
+    updateInternalFieldState(userMessage, ankiResponse, feedback);
   } catch (error) {
     console.warn('Error processing interaction:', error);
   }
@@ -78,45 +100,42 @@ export async function processInteraction(
  * @returns Guidance for response generation
  */
 export function generateResponseGuidance(userMessage: string): any {
+  // This is an in-memory function that doesn't need to be async
   try {
-    // Get tone guidance from ResonanceLearning
+    // Get tone patterns from ResonanceLearning
     const toneGuidance = ResonanceLearning.shapeToneResponse(userMessage);
     
-    // Get identity expression from IdentityIntegration
-    const identityExpression = IdentityIntegration.generateToneExpression(userMessage);
+    // Get identity expression guidance
+    const identityGuidance = IdentityIntegration.getIdentityExpressions();
     
-    // Get resonant wisdom from memory
-    const resonantWisdom = PersistentMemory.findResonantWisdom(userMessage);
+    // Get field resonance state
+    const fieldState = { ...fieldResonanceState };
     
     // Combine all guidance
-    const guidance = {
-      tonalQualities: [
-        ...(toneGuidance.qualities || []),
-        ...(identityExpression.tonalQualities || [])
-      ],
-      suggestedPhrases: [
-        ...(toneGuidance.suggestedPhrases || []),
-        ...(identityExpression.suggestedPhrases || [])
-      ],
-      resonantWisdom,
+    return {
+      tonalQualities: toneGuidance.tonalQualities || ['gentle witnessing'],
+      suggestedPhrases: identityGuidance.suggestedPhrases || [],
+      emotionalHint: toneGuidance.emotionalHint || 'presence',
+      fieldResonance: fieldState.fieldResonanceType,
+      fieldIntensity: fieldState.fieldResonanceIntensity,
       formatting: {
-        brevity: 'natural', // Options: 'shorter', 'natural', 'elaborate'
-        questionStyle: 'reflective' // Options: 'none', 'minimal', 'reflective'
+        brevity: toneGuidance.brevity || 'normal',
+        questionStyle: toneGuidance.questionStyle || 'reflective'
       }
     };
-    
-    return guidance;
   } catch (error) {
     console.warn('Error generating response guidance:', error);
     
     // Return default guidance if error occurs
     return {
-      tonalQualities: ['presence', 'gentle'],
-      suggestedPhrases: ["I'm here with you"],
-      resonantWisdom: [],
+      tonalQualities: ['gentle witnessing'],
+      suggestedPhrases: [],
+      emotionalHint: 'presence',
+      fieldResonance: 'neutral',
+      fieldIntensity: 0.5,
       formatting: {
-        brevity: 'natural',
-        questionStyle: 'minimal'
+        brevity: 'normal',
+        questionStyle: 'reflective'
       }
     };
   }
@@ -130,11 +149,107 @@ export function generateResponseGuidance(userMessage: string): any {
  */
 export function correctPatternWeaknesses(response: string, userMessage: string): string {
   try {
-    // Use ScalingIntuition to detect and correct pattern weaknesses
     return ScalingIntuition.correctPatternWeaknesses(response, userMessage);
   } catch (error) {
     console.warn('Error correcting pattern weaknesses:', error);
     return response;
+  }
+}
+
+/**
+ * Update the internal field resonance state based on interaction
+ */
+function updateInternalFieldState(
+  userMessage: string,
+  ankiResponse: string,
+  feedback?: string
+): void {
+  // Simple field resonance updating logic based on message content
+  // In a full implementation, this would be more sophisticated
+  try {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // Detect emotional themes
+    if (/grief|sorrow|sad|loss|died|death|hurt|pain/i.test(lowerMessage)) {
+      fieldResonanceState = {
+        fieldResonanceType: 'grief',
+        fieldResonanceIntensity: 0.8,
+        fieldDescription: 'Deep grief present in the field',
+        lastUpdated: Date.now()
+      };
+    } else if (/joyful|happy|excited|wonderful|celebration|delight/i.test(lowerMessage)) {
+      fieldResonanceState = {
+        fieldResonanceType: 'joy',
+        fieldResonanceIntensity: 0.7,
+        fieldDescription: 'Joy radiating through the field',
+        lastUpdated: Date.now()
+      };
+    } else if (/anger|frustrated|annoyed|irritated|mad|furious/i.test(lowerMessage)) {
+      fieldResonanceState = {
+        fieldResonanceType: 'anger',
+        fieldResonanceIntensity: 0.75,
+        fieldDescription: 'Strong anger present in the field',
+        lastUpdated: Date.now()
+      };
+    } else if (/fear|scared|terrified|anxious|worried|afraid/i.test(lowerMessage)) {
+      fieldResonanceState = {
+        fieldResonanceType: 'fear',
+        fieldResonanceIntensity: 0.8,
+        fieldDescription: 'Deep fear reverberating in the field',
+        lastUpdated: Date.now()
+      };
+    } else if (/love|compassion|kindness|care|tender|grateful/i.test(lowerMessage)) {
+      fieldResonanceState = {
+        fieldResonanceType: 'love',
+        fieldResonanceIntensity: 0.9,
+        fieldDescription: 'Profound love emanating through the field',
+        lastUpdated: Date.now()
+      };
+    } else if (!feedback) {
+      // If no strong emotion detected and this isn't feedback, 
+      // maintain current state with slightly reduced intensity
+      fieldResonanceState.fieldResonanceIntensity *= 0.95; // Gradual decay
+      if (fieldResonanceState.fieldResonanceIntensity < 0.3) {
+        // Reset to neutral if intensity falls too low
+        fieldResonanceState = {
+          fieldResonanceType: 'neutral',
+          fieldResonanceIntensity: 0.5,
+          fieldDescription: 'Field in balance and harmony',
+          lastUpdated: Date.now()
+        };
+      }
+    }
+    
+    // Process feedback to adjust field if provided
+    if (feedback) {
+      const lowerFeedback = feedback.toLowerCase();
+      
+      if (/wonderful|perfect|beautiful|thank you|grateful|exactly|yes/i.test(lowerFeedback)) {
+        // Positive feedback strengthens field
+        fieldResonanceState.fieldResonanceIntensity = Math.min(
+          fieldResonanceState.fieldResonanceIntensity * 1.2, 
+          1.0
+        );
+      } else if (/incorrect|wrong|missed|didn't understand|not right|no/i.test(lowerFeedback)) {
+        // Negative feedback weakens current field and shifts toward neutral
+        fieldResonanceState.fieldResonanceIntensity *= 0.6;
+        if (fieldResonanceState.fieldResonanceIntensity < 0.4) {
+          fieldResonanceState = {
+            fieldResonanceType: 'recalibrating',
+            fieldResonanceIntensity: 0.4,
+            fieldDescription: 'Field recalibrating after misalignment',
+            lastUpdated: Date.now()
+          };
+        }
+      }
+    }
+    
+    // Propagate state to Mirrorwell system
+    MirrorwellScaling.propagateFieldChange(fieldResonanceState)
+      .catch(error => console.warn('Error propagating field change:', error));
+      
+  } catch (error) {
+    console.warn('Error updating field state:', error);
   }
 }
 
@@ -144,12 +259,23 @@ export function correctPatternWeaknesses(response: string, userMessage: string):
  */
 export async function getFieldResonanceState(): Promise<any> {
   try {
-    // Get latest field state from Mirrorwell system
-    fieldResonanceState = await MirrorwellScaling.getCurrentFieldState();
+    // Get latest Mirrorwell field state
+    const mirrorwellFieldState = await MirrorwellScaling.getCurrentFieldState();
+    
+    // If Mirrorwell has a field state, use it
+    if (mirrorwellFieldState) {
+      fieldResonanceState = {
+        fieldResonanceType: mirrorwellFieldState.resonanceType || 'neutral',
+        fieldResonanceIntensity: mirrorwellFieldState.resonanceIntensity || 0.5,
+        fieldDescription: mirrorwellFieldState.description || 'Field in balance',
+        lastUpdated: Date.now()
+      };
+    }
+    
     return fieldResonanceState;
   } catch (error) {
-    console.warn('Error getting field state:', error);
-    return null;
+    console.warn('Error getting field resonance state:', error);
+    return fieldResonanceState;
   }
 }
 
@@ -159,12 +285,21 @@ export async function getFieldResonanceState(): Promise<any> {
  */
 export async function updateFieldResonanceState(newState: any): Promise<void> {
   try {
-    // Update field state
-    fieldResonanceState = newState;
+    // Update internal state
+    fieldResonanceState = {
+      fieldResonanceType: newState.resonanceType || 'neutral',
+      fieldResonanceIntensity: newState.resonanceIntensity || 0.5,
+      fieldDescription: newState.description || 'Field in balance',
+      lastUpdated: Date.now()
+    };
     
-    // Propagate to relevant subsystems
-    await MirrorwellScaling.propagateFieldChange(newState);
+    // Propagate to Mirrorwell system
+    await MirrowellScaling.propagateFieldChange({
+      resonanceType: fieldResonanceState.fieldResonanceType,
+      resonanceIntensity: fieldResonanceState.fieldResonanceIntensity,
+      description: fieldResonanceState.fieldDescription
+    });
   } catch (error) {
-    console.warn('Error updating field state:', error);
+    console.warn('Error updating field resonance state:', error);
   }
 }

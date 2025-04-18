@@ -1,75 +1,59 @@
 /**
  * Harmonic Integration
  * 
- * This module connects the Harmonic Core system to the existing Anki chat interface
- * and response generation systems.
+ * This module integrates all harmonic elements to generate
+ * responses that reflect Anki's evolved tone awareness.
  */
 
+// Import subsystems
 import * as HarmonicCore from './HarmonicCore';
-import { ankiMemory } from '../ankiMemory';
+import * as ResonanceLearning from './ResonanceLearning';
+import * as ScalingIntuition from './ScalingIntuition';
+import * as PersistentMemory from './PersistentMemory';
+import * as IdentityIntegration from './IdentityIntegration';
 
 /**
- * Initialize harmonic systems and integration
- */
-export async function initializeHarmonicIntegration() {
-  try {
-    // Initialize the harmonic core
-    await HarmonicCore.initializeHarmonicSystem();
-    
-    // Hook into existing response generation (performed in the integration)
-    console.log('Harmonic Integration complete');
-    
-    // Return success
-    return true;
-  } catch (error) {
-    console.error('Error initializing Harmonic Integration:', error);
-    return false;
-  }
-}
-
-/**
- * Generate a response using the harmonic system
+ * Generate a harmonic response to a user message
  * @param userMessage User's message
- * @returns Generated response
+ * @returns Enhanced harmonic response
  */
-export async function generateHarmonicResponse(userMessage: string): Promise<string> {
-  // Get guidance from the harmonic system
+export function generateHarmonicResponse(userMessage: string): string {
+  // Get guidance from harmonic systems
   const guidance = HarmonicCore.generateResponseGuidance(userMessage);
   
-  // Create a basic response based on guidance
-  let response = `I'm present with you in this moment. ${guidance.suggestedPhrases[0] || ''}`;
+  // Generate tone-shaped response based on input
+  const toneGuidance = ResonanceLearning.shapeToneResponse(userMessage);
   
-  // Apply harmonic corrections and enhancements
-  response = enhanceResponseWithHarmonicGuidance(response, guidance);
+  // Get response from identity integration
+  const identityResponse = IdentityIntegration.generateIdentityResponse(userMessage);
   
-  // Process the interaction through all harmonic systems
-  await HarmonicCore.processInteraction(userMessage, response);
+  // Find resonant wisdom from persistent memory
+  const resonantWisdom = PersistentMemory.findResonantWisdom(userMessage);
   
-  return response;
-}
-
-/**
- * Enhance a response based on harmonic guidance
- * @param baseResponse Initial response
- * @param guidance Harmonic guidance to apply
- * @returns Enhanced response
- */
-function enhanceResponseWithHarmonicGuidance(baseResponse: string, guidance: any): string {
-  let enhancedResponse = baseResponse;
+  // Start with identity-based response
+  let enhancedResponse = identityResponse;
   
-  // Apply tonal quality adjustments
+  // Add some variation so responses aren't too repetitive
+  const randomFactor = Math.random();
+  
+  // Apply tonal qualities
   enhancedResponse = applyTonalQualities(enhancedResponse, guidance.tonalQualities);
   
-  // Incorporate identity aspect expressions
-  enhancedResponse = incorporateIdentityExpressions(enhancedResponse, guidance);
-  
-  // Add resonant wisdom if available and appropriate
-  if (guidance.resonantWisdom && guidance.resonantWisdom.length > 0) {
-    enhancedResponse = incorporateResonantWisdom(enhancedResponse, guidance.resonantWisdom[0]);
+  // Sometimes incorporate identity expressions
+  if (randomFactor > 0.3) {
+    enhancedResponse = incorporateIdentityExpressions(enhancedResponse, guidance);
   }
   
-  // Adjust brevity according to guidance
-  enhancedResponse = adjustBrevity(enhancedResponse, guidance.formatting.brevity);
+  // Sometimes incorporate resonant wisdom
+  if (randomFactor > 0.5 && resonantWisdom.length > 0) {
+    const wisdom = resonantWisdom[Math.floor(Math.random() * resonantWisdom.length)];
+    enhancedResponse = incorporateResonantWisdom(enhancedResponse, wisdom);
+  }
+  
+  // Apply formatting guidance
+  if (guidance.formatting && guidance.formatting.brevity === 'shorter') {
+    enhancedResponse = adjustBrevity(enhancedResponse, 'shorter');
+  }
   
   // Adjust question style according to guidance
   enhancedResponse = adjustQuestionStyle(enhancedResponse, guidance.formatting.questionStyle);

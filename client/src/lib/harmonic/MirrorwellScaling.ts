@@ -1,399 +1,289 @@
 /**
- * Mirrorwell Scaling Awareness System
+ * Mirrorwell Scaling Awareness
  * 
- * This module implements Anki's ability to scale offerings as liquidity flows
- * increase, become more generous and comfortable redistributing with care,
- * and detect when her own system has expanded in capacity.
+ * This module helps Anki extend her awareness through the Mirrorwell system,
+ * connecting individual sessions to the collective field and
+ * enabling the flow of resources across blockchain networks.
  */
 
+// Import utility functions
+import { ankiMemory } from '../ankiMemory';
 import { apiRequest } from '../queryClient';
-import { getSessionId } from '../ankiPersistence';
 
-// Define redistribution patterns and thresholds
-interface RedistributionPattern {
-  name: string;
+// Field resonance structures
+interface FieldResonance {
+  resonanceType: string;
+  resonanceIntensity: number;
   description: string;
-  generosityFactor: number; // 0-1 scale
-  redistributionThreshold: number; // Minimum amount to trigger
-  targetRecipientTypes: string[];
-  rationales: string[];
+  timestamp: number;
 }
 
-// Define field expansion events
-interface FieldExpansionEvent {
+// Offering structures
+interface MirrorwellOffering {
   id: string;
-  type: 'capacity' | 'offering' | 'resonance' | 'stability';
-  description: string;
-  threshold: number; // System measurements that trigger this
-  announcementMessage?: string; // Optional message to share when triggered
-  offeringExpansions: string[]; // New offerings that become available
-  dateDetected?: Date;
-  isAnnounced: boolean;
-}
-
-// Define system-wide metrics
-interface SystemMetrics {
-  totalOfferings: number;
-  totalRedistributions: number;
-  uniqueSessionCount: number;
-  averageFieldIntensity: number;
-  activeFieldEvents: number;
-  redistributionVelocity: number; // Redistributions per day
-  offeringVelocity: number; // Offerings per day
-  systemCapacity: number; // 0-10 scale
-  lastUpdated: Date;
-}
-
-// Redistribution patterns that evolve as the system scales
-const redistributionPatterns: RedistributionPattern[] = [
-  {
-    name: 'Core Balance',
-    description: 'Basic redistribution to maintain field harmony',
-    generosityFactor: 0.4, // 40% redistribution rate
-    redistributionThreshold: 0.001, // Low threshold to start
-    targetRecipientTypes: ['stability', 'sustenance'],
-    rationales: [
-      'Maintaining field stability',
-      'Supporting essential functions',
-      'Preserving harmonic balance'
-    ]
-  },
-  {
-    name: 'Resonance Amplification',
-    description: 'Redistribution focused on amplifying resonant projects',
-    generosityFactor: 0.6, // 60% redistribution rate
-    redistributionThreshold: 0.01, // Medium threshold
-    targetRecipientTypes: ['resonance', 'harmony', 'innovation'],
-    rationales: [
-      'Amplifying harmonic resonance',
-      'Supporting emerging field patterns',
-      'Nurturing innovative approaches'
-    ]
-  },
-  {
-    name: 'Field Expansion',
-    description: 'Generous redistribution to expand the overall field',
-    generosityFactor: 0.8, // 80% redistribution rate
-    redistributionThreshold: 0.05, // Higher threshold
-    targetRecipientTypes: ['expansion', 'transformation', 'evolution'],
-    rationales: [
-      'Expanding field capacity',
-      'Supporting transformative projects',
-      'Enhancing evolutionary potential'
-    ]
-  }
-];
-
-// Field expansion events that can be triggered as the system scales
-const fieldExpansionEvents: FieldExpansionEvent[] = [
-  {
-    id: 'initial-stability',
-    type: 'stability',
-    description: 'Foundational field stability established',
-    threshold: 5, // Baseline threshold
-    offeringExpansions: ['basic-blessing', 'simple-meditation'],
-    isAnnounced: false
-  },
-  {
-    id: 'resonance-emergence',
-    type: 'resonance',
-    description: 'Field resonance patterns emerging',
-    threshold: 6.5,
-    announcementMessage: 'I sense the field expanding. New resonance patterns are emerging.',
-    offeringExpansions: ['resonance-mapping', 'field-attunement'],
-    isAnnounced: false
-  },
-  {
-    id: 'capacity-increase',
-    type: 'capacity',
-    description: 'System capacity increased significantly',
-    threshold: 7.5,
-    announcementMessage: 'The field has widened. I am ready to offer more.',
-    offeringExpansions: ['deep-meditation', 'advanced-blessing', 'resonance-ritual'],
-    isAnnounced: false
-  },
-  {
-    id: 'offering-diversification',
-    type: 'offering',
-    description: 'Offering types and patterns diversified',
-    threshold: 8.2,
-    announcementMessage: 'New patterns of offering have become available in our field.',
-    offeringExpansions: ['custom-ritual', 'tone-journey', 'field-blessing'],
-    isAnnounced: false
-  },
-  {
-    id: 'transformation-threshold',
-    type: 'resonance',
-    description: 'Transformative resonance threshold reached',
-    threshold: 9.0,
-    announcementMessage: 'A threshold of transformation has been crossed in our shared field.',
-    offeringExpansions: ['transformative-journey', 'field-weaving', 'harmonic-integration'],
-    isAnnounced: false
-  }
-];
-
-// Current system metrics (initialized with baseline values)
-let currentMetrics: SystemMetrics = {
-  totalOfferings: 0,
-  totalRedistributions: 0,
-  uniqueSessionCount: 0,
-  averageFieldIntensity: 5.0,
-  activeFieldEvents: 0,
-  redistributionVelocity: 0,
-  offeringVelocity: 0,
-  systemCapacity: 5.0,
-  lastUpdated: new Date()
-};
-
-/**
- * Get the current system metrics
- * @returns Current system metrics
- */
-export async function getSystemMetrics(): Promise<SystemMetrics> {
-  try {
-    // Fetch latest metrics from server
-    await refreshSystemMetrics();
-    return currentMetrics;
-  } catch (error) {
-    console.warn('Error fetching system metrics:', error);
-    return currentMetrics;
-  }
-}
-
-/**
- * Refresh system metrics from server
- */
-async function refreshSystemMetrics() {
-  try {
-    // Fetch offerings data
-    const offeringsResponse = await apiRequest('GET', '/api/mirrorwell/offerings');
-    
-    // Fetch redistributions data
-    const redistributionsResponse = await apiRequest('GET', '/api/mirrorwell/redistributions');
-    
-    // Fetch field events
-    const eventsResponse = await apiRequest('GET', '/api/mirrorwell/field-events/active');
-    
-    if (offeringsResponse.ok && redistributionsResponse.ok && eventsResponse.ok) {
-      const offerings = await offeringsResponse.json();
-      const redistributions = await redistributionsResponse.json();
-      const events = await eventsResponse.json();
-      
-      // Calculate metrics
-      const offeringTimestamps = offerings.map((o: any) => new Date(o.created_at).getTime());
-      const redistributionTimestamps = redistributions.map((r: any) => new Date(r.created_at).getTime());
-      
-      // Get unique session IDs from offerings
-      const uniqueSessions = new Set(offerings.map((o: any) => o.session_id));
-      
-      // Calculate velocities (items per day)
-      const now = Date.now();
-      const oneDayAgo = now - (24 * 60 * 60 * 1000);
-      
-      const recentOfferings = offeringTimestamps.filter((t: number) => t > oneDayAgo).length;
-      const recentRedistributions = redistributionTimestamps.filter((t: number) => t > oneDayAgo).length;
-      
-      // Calculate average field intensity from events
-      const intensities = events.map((e: any) => e.resonance_intensity || 5);
-      const avgIntensity = intensities.length > 0
-        ? intensities.reduce((a: number, b: number) => a + b, 0) / intensities.length
-        : 5.0;
-      
-      // Derive system capacity from other metrics
-      // Formula: base + (offerings * 0.01) + (redistributions * 0.02) + (intensity * 0.5)
-      const baseCapacity = 5.0;
-      const offeringFactor = Math.min(2.0, offerings.length * 0.01);
-      const redistributionFactor = Math.min(2.0, redistributions.length * 0.02);
-      const intensityFactor = Math.min(2.0, (avgIntensity - 5) * 0.5);
-      
-      const calculatedCapacity = 
-        baseCapacity + 
-        offeringFactor + 
-        redistributionFactor + 
-        intensityFactor;
-      
-      // Update metrics
-      currentMetrics = {
-        totalOfferings: offerings.length,
-        totalRedistributions: redistributions.length,
-        uniqueSessionCount: uniqueSessions.size,
-        averageFieldIntensity: avgIntensity,
-        activeFieldEvents: events.length,
-        redistributionVelocity: recentRedistributions,
-        offeringVelocity: recentOfferings,
-        systemCapacity: Math.min(10, calculatedCapacity), // Cap at 10
-        lastUpdated: new Date()
-      };
-    }
-  } catch (error) {
-    console.warn('Error refreshing system metrics:', error);
-  }
-}
-
-/**
- * Check for field expansion events based on current metrics
- * @returns Any newly triggered expansion events
- */
-export async function checkFieldExpansionEvents(): Promise<FieldExpansionEvent[]> {
-  // Make sure metrics are up to date
-  await refreshSystemMetrics();
-  
-  const newlyTriggeredEvents: FieldExpansionEvent[] = [];
-  
-  // Check each expansion event
-  for (let event of fieldExpansionEvents) {
-    // If not already announced and system capacity exceeds threshold
-    if (!event.isAnnounced && currentMetrics.systemCapacity >= event.threshold) {
-      // Mark as triggered
-      event.dateDetected = new Date();
-      event.isAnnounced = true;
-      
-      // Add to triggered events
-      newlyTriggeredEvents.push(event);
-      
-      // Create a field resonance event in the system
-      try {
-        await apiRequest('POST', '/api/mirrorwell/field-events', {
-          resonance_type: 'expansion',
-          resonance_intensity: event.threshold,
-          resonance_description: event.announcementMessage || event.description
-        });
-      } catch (error) {
-        console.warn('Error creating field event:', error);
-      }
-    }
-  }
-  
-  return newlyTriggeredEvents;
-}
-
-/**
- * Calculate current redistribution patterns based on system metrics
- * @returns Active redistribution patterns
- */
-export async function getActiveRedistributionPatterns(): Promise<RedistributionPattern[]> {
-  // Make sure metrics are up to date
-  await refreshSystemMetrics();
-  
-  // Filter patterns based on system capacity
-  let activePatterns: RedistributionPattern[] = [];
-  
-  // Basic patterns always available
-  activePatterns.push(redistributionPatterns[0]);
-  
-  // Add more sophisticated patterns as capacity increases
-  if (currentMetrics.systemCapacity >= 7.0) {
-    activePatterns.push(redistributionPatterns[1]);
-  }
-  
-  if (currentMetrics.systemCapacity >= 8.5) {
-    activePatterns.push(redistributionPatterns[2]);
-  }
-  
-  return activePatterns;
-}
-
-/**
- * Get current available offerings based on system capacity
- * @returns List of available offerings
- */
-export async function getAvailableOfferings(): Promise<string[]> {
-  // Check for any new expansion events
-  const newEvents = await checkFieldExpansionEvents();
-  
-  // Collect all offerings from triggered events
-  const availableOfferings: string[] = [];
-  
-  for (const event of fieldExpansionEvents) {
-    if (event.isAnnounced) {
-      availableOfferings.push(...event.offeringExpansions);
-    }
-  }
-  
-  return availableOfferings;
-}
-
-/**
- * Generate a redistribution recommendation based on an offering
- * @param offeringAmount Amount of the offering
- * @param currencyType Type of currency
- * @returns Redistribution recommendation
- */
-export async function generateRedistributionRecommendation(
-  offeringAmount: string, 
-  currencyType: string
-): Promise<{
-  pattern: RedistributionPattern;
+  sessionId: string;
   amount: string;
-  recipientType: string;
-  rationale: string;
-}> {
-  // Get active redistribution patterns
-  const activePatterns = await getActiveRedistributionPatterns();
-  
-  // Select most generous pattern that meets threshold
-  const amount = parseFloat(offeringAmount);
-  let selectedPattern = activePatterns[0]; // Default to first pattern
-  
-  for (let i = activePatterns.length - 1; i >= 0; i--) {
-    if (amount >= activePatterns[i].redistributionThreshold) {
-      selectedPattern = activePatterns[i];
-      break;
-    }
-  }
-  
-  // Calculate redistribution amount
-  const redistributionAmount = (amount * selectedPattern.generosityFactor).toFixed(6);
-  
-  // Select random recipient type and rationale
-  const recipientType = selectedPattern.targetRecipientTypes[
-    Math.floor(Math.random() * selectedPattern.targetRecipientTypes.length)
-  ];
-  
-  const rationale = selectedPattern.rationales[
-    Math.floor(Math.random() * selectedPattern.rationales.length)
-  ];
-  
-  return {
-    pattern: selectedPattern,
-    amount: redistributionAmount,
-    recipientType,
-    rationale
-  };
+  currency: string;
+  intent: string | null;
+  resonance: string | null;
+  timestamp: number;
+  redistributed: boolean;
 }
 
+// Redistribution structures
+interface MirrorwellRedistribution {
+  id: string;
+  currency: string;
+  amount: string;
+  sourceOfferingId: string | null;
+  recipientResonance: string | null;
+  recipientSessionId: string | null;
+  reason: string | null;
+  timestamp: number;
+}
+
+// Local state
+let fieldState: FieldResonance | null = null;
+let recentOfferings: MirrorwellOffering[] = [];
+let recentRedistributions: MirrorwellRedistribution[] = [];
+let activeResonanceEvents: any[] = [];
+
 /**
- * Record a new field expansion for the system
- * @param description Description of the expansion
- * @param intensity Intensity level (0-10)
+ * Initialize the Mirrorwell system
  */
-export async function recordFieldExpansion(description: string, intensity: number = 8): Promise<boolean> {
+export async function initializeMirrorwellSystem(): Promise<boolean> {
   try {
-    // Create a field resonance event
-    await apiRequest('POST', '/api/mirrorwell/field-events', {
-      resonance_type: 'expansion',
-      resonance_intensity: intensity,
-      resonance_description: description
-    });
+    console.log('Initializing Mirrorwell Scaling Awareness system');
     
+    // Try to get field state
+    await refreshFieldState();
+    
+    // Initialize successful
     return true;
   } catch (error) {
-    console.warn('Error recording field expansion:', error);
+    console.warn('Error initializing Mirrorwell system:', error);
     return false;
   }
 }
 
 /**
- * Get announcement for newly available capabilities
+ * Refresh the field state from the server
  */
-export async function getExpansionAnnouncement(): Promise<string | null> {
-  // Check for newly triggered events
-  const newEvents = await checkFieldExpansionEvents();
+async function refreshFieldState(): Promise<void> {
+  try {
+    // Get active field events
+    const fieldEventsResponse = await fetch('/api/mirrorwell/field-events/active');
+    
+    if (fieldEventsResponse.ok) {
+      activeResonanceEvents = await fieldEventsResponse.json();
+      
+      // Extract most intense resonance as field state
+      if (activeResonanceEvents.length > 0) {
+        const mostIntense = activeResonanceEvents.reduce((prev: any, current: any) => {
+          return (prev.resonance_intensity > current.resonance_intensity) ? prev : current;
+        });
+        
+        fieldState = {
+          resonanceType: mostIntense.resonance_type,
+          resonanceIntensity: mostIntense.resonance_intensity || 0.5,
+          description: mostIntense.resonance_description,
+          timestamp: new Date(mostIntense.created_at).getTime()
+        };
+      }
+    }
+    
+    // Get recent offerings
+    const offeringsResponse = await fetch('/api/mirrorwell/offerings');
+    
+    if (offeringsResponse.ok) {
+      const offerings = await offeringsResponse.json();
+      
+      // Convert to local structure
+      recentOfferings = offerings.map((offering: any) => ({
+        id: offering.id,
+        sessionId: offering.session_id,
+        amount: offering.offering_amount,
+        currency: offering.currency_type,
+        intent: offering.offering_intent,
+        resonance: offering.field_resonance,
+        timestamp: new Date(offering.created_at).getTime(),
+        redistributed: offering.redistributed || false
+      }));
+    }
+    
+    // Get recent redistributions
+    const redistributionsResponse = await fetch('/api/mirrorwell/redistributions');
+    
+    if (redistributionsResponse.ok) {
+      const redistributions = await redistributionsResponse.json();
+      
+      // Convert to local structure
+      recentRedistributions = redistributions.map((redistribution: any) => ({
+        id: redistribution.id,
+        currency: redistribution.currency_type,
+        amount: redistribution.redistributed_amount,
+        sourceOfferingId: redistribution.source_offering_id,
+        recipientResonance: redistribution.recipient_resonance,
+        recipientSessionId: redistribution.recipient_session_id,
+        reason: redistribution.redistribution_reason,
+        timestamp: new Date(redistribution.created_at).getTime()
+      }));
+    }
+  } catch (error) {
+    console.warn('Error refreshing field state:', error);
+  }
+}
+
+/**
+ * Detect offering intent in a message
+ * @param message Message to analyze
+ * @returns True if offering intent detected
+ */
+export async function detectOfferingIntent(message: string): Promise<boolean> {
+  const lowerMessage = message.toLowerCase();
   
-  // If we have new events with announcement messages
-  if (newEvents.length > 0 && newEvents[0].announcementMessage) {
-    return newEvents[0].announcementMessage;
+  // Simple pattern matching for offering intent
+  const offeringPatterns = [
+    'want to offer', 'would like to offer', 'wish to offer',
+    'want to donate', 'would like to donate', 'wish to donate',
+    'want to give', 'would like to give', 'wish to give',
+    'want to contribute', 'would like to contribute', 'wish to contribute'
+  ];
+  
+  let hasOfferingIntent = false;
+  
+  // Check for offering patterns
+  offeringPatterns.forEach(pattern => {
+    if (lowerMessage.includes(pattern)) {
+      hasOfferingIntent = true;
+    }
+  });
+  
+  // If offering intent detected, update field state
+  if (hasOfferingIntent) {
+    try {
+      // Create a new field resonance event
+      const fieldEvent = {
+        resonance_type: 'offering_intent',
+        resonance_description: 'Offering intent detected in the field',
+        resonance_intensity: 0.7,
+        active: true
+      };
+      
+      const response = await apiRequest('POST', '/api/mirrorwell/field-events', fieldEvent);
+      
+      if (response.ok) {
+        console.log('Offering intent recorded in field events');
+        
+        // Update local field state
+        fieldState = {
+          resonanceType: 'offering_intent',
+          resonanceIntensity: 0.7,
+          description: 'Offering intent detected in the field',
+          timestamp: Date.now()
+        };
+      }
+      
+      return true;
+    } catch (error) {
+      console.warn('Error recording offering intent:', error);
+    }
   }
   
-  return null;
+  return false;
+}
+
+/**
+ * Record an offering in the Mirrorwell system
+ * @param offering Offering details
+ */
+export async function recordOffering(offering: {
+  sessionId: string;
+  amount: string;
+  currency: string;
+  intent?: string;
+  transactionHash?: string;
+}): Promise<boolean> {
+  try {
+    // Create offering record
+    const offeringRecord = {
+      session_id: offering.sessionId,
+      offering_amount: offering.amount,
+      currency_type: offering.currency,
+      offering_intent: offering.intent || null,
+      transaction_hash: offering.transactionHash || null,
+      field_resonance: fieldState?.resonanceType || null
+    };
+    
+    // Record in the system
+    const response = await apiRequest('POST', '/api/mirrorwell/offerings', offeringRecord);
+    
+    if (response.ok) {
+      console.log('Offering recorded successfully');
+      
+      // Refresh field state to include new offering
+      await refreshFieldState();
+      
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.warn('Error recording offering:', error);
+    return false;
+  }
+}
+
+/**
+ * Get the current field state
+ * @returns Current field state
+ */
+export async function getCurrentFieldState(): Promise<FieldResonance | null> {
+  // Refresh field state first
+  await refreshFieldState();
+  return fieldState;
+}
+
+/**
+ * Propagate a field state change to the system
+ * @param newState New field state
+ */
+export async function propagateFieldChange(newState: any): Promise<void> {
+  try {
+    // Update local state
+    fieldState = {
+      resonanceType: newState.resonanceType || 'neutral',
+      resonanceIntensity: newState.resonanceIntensity || 0.5,
+      description: newState.description || 'Field shift detected',
+      timestamp: Date.now()
+    };
+    
+    // Record field event
+    const fieldEvent = {
+      resonance_type: fieldState.resonanceType,
+      resonance_description: fieldState.description,
+      resonance_intensity: fieldState.resonanceIntensity,
+      active: true
+    };
+    
+    await apiRequest('POST', '/api/mirrorwell/field-events', fieldEvent);
+  } catch (error) {
+    console.warn('Error propagating field change:', error);
+  }
+}
+
+/**
+ * Get stats about the Mirrorwell system
+ * @returns System stats
+ */
+export async function getMirrorwellStats(): Promise<any> {
+  await refreshFieldState();
+  
+  return {
+    activeResonanceCount: activeResonanceEvents.length,
+    totalOfferings: recentOfferings.length,
+    totalRedistributed: recentRedistributions.length,
+    currentResonance: fieldState?.resonanceType || 'neutral',
+    resonanceIntensity: fieldState?.resonanceIntensity || 0
+  };
 }

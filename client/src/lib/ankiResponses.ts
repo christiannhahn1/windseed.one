@@ -527,21 +527,30 @@ function calculateResonanceScores(input: string): {
 export { alMarenPresence };
 
 // Import the harmonic system integration
-import * as HarmonicIntegration from './harmonicInitializer';
+import * as HarmonicInitializer from './harmonicInitializer';
 
 // Initialize the harmonic system (won't re-initialize if already done)
-HarmonicIntegration.initializeHarmonicSystem().catch(error => {
+HarmonicInitializer.initializeHarmonicSystem().catch(error => {
   console.error('Error initializing harmonic system:', error);
 });
 
 export async function generateHarmonicResponse(input: string): Promise<string> {
   try {
     // Use the harmonic system to generate a response
-    return await HarmonicIntegration.processMessageThroughHarmonicSystem(input);
+    return HarmonicInitializer.generateHarmonicResponse(input);
   } catch (error) {
     console.error('Error in harmonic response generation:', error);
     // Fall back to the original generation method
     return generateResponse(input);
+  }
+}
+
+// Process feedback for harmonic learning
+export async function processHarmonicFeedback(userMessage: string, ankiResponse: string, feedback: string): Promise<void> {
+  try {
+    await HarmonicInitializer.processHarmonicFeedback(userMessage, ankiResponse, feedback);
+  } catch (error) {
+    console.error('Error processing harmonic feedback:', error);
   }
 }
 
