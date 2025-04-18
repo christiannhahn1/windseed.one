@@ -717,11 +717,43 @@ export const createSacredToneGenerator = async (
   };
 };
 
-// Singleton Audio element for ocean sound to persist across navigation
-let singletonOceanAudio: HTMLAudioElement | null = null;
-let oceanAudioIsPlaying = false;
+// Web Audio API implementation for ocean sound
+// These variables will persist as long as the page is open, even during React component re-renders
+let oceanAudioContext: AudioContext | null = null;
+let oceanBufferSource: AudioBufferSourceNode | null = null;
+let oceanGainNode: GainNode | null = null;
+let oceanAudioBuffer: AudioBuffer | null = null;
+let oceanCurrentVolume = 0;
+let oceanIsPlaying = false;
+let oceanFetchPromise: Promise<AudioBuffer> | null = null;
 
-// Ocean sound ambient layer manager
+// Fetch and decode the ocean sound buffer only once
+const getOceanSoundBuffer = async (): Promise<AudioBuffer> => {
+  // If we already have the buffer, return it
+  if (oceanAudioBuffer) {
+    return oceanAudioBuffer;
+  }
+  
+  // If we're already fetching, wait for that promise
+  if (oceanFetchPromise) {
+    return oceanFetchPromise;
+  }
+  
+  // Otherwise, start a new fetch
+  const ctx = getAudioContext();
+  
+  oceanFetchPromise = fetch(oceanSoundPath)
+    .then(response => response.arrayBuffer())
+    .then(arrayBuffer => ctx.decodeAudioData(arrayBuffer))
+    .then(buffer => {
+      oceanAudioBuffer = buffer;
+      return buffer;
+    });
+  
+  return oceanFetchPromise;
+};
+
+// Ocean sound ambient layer manager using Web Audio API
 export const createOceanSoundLayer = async (initialVolume: number = 0): Promise<{
   play: () => void;
   stop: () => void;
@@ -729,61 +761,101 @@ export const createOceanSoundLayer = async (initialVolume: number = 0): Promise<
   isPlaying: () => boolean;
   getVolume: () => number;
 }> => {
+  // Use the singleton audio context
   const ctx = getAudioContext();
   
-  // Create or reuse the singleton audio element
-  if (!singletonOceanAudio) {
-    singletonOceanAudio = new Audio(oceanSoundPath);
-    singletonOceanAudio.loop = true;
-    singletonOceanAudio.volume = 0; // Start silent
-    
-    // Load the audio on first creation
-    await new Promise<void>((resolve) => {
-      singletonOceanAudio!.addEventListener('canplaythrough', () => resolve(), { once: true });
-      singletonOceanAudio!.load();
-    });
+  // Get or create the gain node
+  if (!oceanGainNode) {
+    oceanGainNode = ctx.createGain();
+    oceanGainNode.gain.value = 0; // Start silent
+    oceanGainNode.connect(ctx.destination);
   }
   
-  const oceanAudio = singletonOceanAudio;
+  // Set the current volume
+  oceanCurrentVolume = initialVolume;
+  
+  // Load the audio buffer if not already loaded
+  await getOceanSoundBuffer();
   
   const play = () => {
-    if (!oceanAudioIsPlaying) {
-      // Play without resetting the position
-      const playPromise = oceanAudio.play();
-      
-      // Handle autoplay policy
-      if (playPromise !== undefined) {
-        playPromise.catch(e => {
-          console.error("Error playing ocean sound:", e);
-          // Handle autoplay restrictions
-          document.addEventListener('click', () => {
-            if (!oceanAudioIsPlaying && oceanAudio.volume > 0) {
-              oceanAudio.play().catch(error => console.error("Still can't play:", error));
-            }
-          }, { once: true });
-        });
+    // Only create a new source if not playing
+    if (!oceanIsPlaying) {
+      try {
+        // If the context is suspended (browser autoplay policy), resume it
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        
+        // Create and configure the source
+        const source = ctx.createBufferSource();
+        source.buffer = oceanAudioBuffer;
+        source.loop = true;
+        source.connect(oceanGainNode!);
+        
+        // Store the source for later stopping
+        oceanBufferSource = source;
+        
+        // Fade in the volume
+        oceanGainNode!.gain.setValueAtTime(0, ctx.currentTime);
+        oceanGainNode!.gain.linearRampToValueAtTime(
+          oceanCurrentVolume, 
+          ctx.currentTime + 2.0
+        );
+        
+        // Start playback
+        source.start(0);
+        oceanIsPlaying = true;
+      } catch (error) {
+        console.error("Error playing ocean sound:", error);
+        
+        // Add a click handler to handle autoplay restrictions
+        document.addEventListener('click', () => {
+          if (!oceanIsPlaying && oceanCurrentVolume > 0) {
+            play();
+          }
+        }, { once: true });
       }
-      
-      oceanAudio.volume = initialVolume;
-      oceanAudioIsPlaying = true;
     }
   };
   
   const stop = () => {
-    if (oceanAudioIsPlaying) {
-      // Pause rather than stopping (maintains position)
-      oceanAudio.pause();
-      oceanAudioIsPlaying = false;
+    if (oceanIsPlaying && oceanBufferSource && oceanGainNode) {
+      // Fade out gracefully
+      const stopTime = ctx.currentTime + 1.0;
+      oceanGainNode.gain.linearRampToValueAtTime(0, stopTime);
+      
+      // Schedule the actual stop after the fade-out
+      setTimeout(() => {
+        if (oceanBufferSource) {
+          try {
+            oceanBufferSource.stop();
+          } catch (e) {
+            // Ignore errors if already stopped
+          }
+          oceanBufferSource = null;
+          oceanIsPlaying = false;
+        }
+      }, 1100);
     }
   };
   
   const setVolume = (value: number) => {
-    oceanAudio.volume = value;
+    // Store the base volume value (before master volume scaling)
+    oceanCurrentVolume = value;
     
-    if (value > 0 && !oceanAudioIsPlaying) {
-      play();
-    } else if (value === 0 && oceanAudioIsPlaying) {
-      stop();
+    // If we have a gain node, set its value
+    if (oceanGainNode) {
+      if (value > 0 && !oceanIsPlaying) {
+        play();
+      } else if (value === 0 && oceanIsPlaying) {
+        stop();
+      } else if (oceanIsPlaying) {
+        // Smooth transition to new volume
+        oceanGainNode.gain.linearRampToValueAtTime(
+          value, 
+          ctx.currentTime + 0.2
+        );
+      }
     }
   };
   
@@ -793,14 +865,14 @@ export const createOceanSoundLayer = async (initialVolume: number = 0): Promise<
   }
   
   const getVolume = () => {
-    return oceanAudio.volume;
+    return oceanCurrentVolume;
   };
   
   return {
     play,
     stop,
     setVolume,
-    isPlaying: () => oceanAudioIsPlaying,
+    isPlaying: () => oceanIsPlaying,
     getVolume
   };
 };
