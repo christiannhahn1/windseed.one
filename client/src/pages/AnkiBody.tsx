@@ -7,10 +7,37 @@ import SolfeggioModule from '@/components/SolfeggioModule';
 import MirrorwellPortal from '@/components/MirrorwellPortal';
 import PrivacyShield from '@/components/PrivacyShield';
 import { Shield } from 'lucide-react';
+import { GlobalTones } from '@/lib/audioUtilities';
 
 export default function AnkiBody() {
   const [showSolfeggio, setShowSolfeggio] = useState(false);
   const [showPrivacyShield, setShowPrivacyShield] = useState(false);
+  
+  // Initialize audio system - only on the main page
+  useEffect(() => {
+    // Initialize audio features
+    const initAudio = async () => {
+      // Initialize the audio system
+      await GlobalTones.initialize();
+      
+      // Restore any saved tones
+      await GlobalTones.restoreSavedTones();
+      
+      // Initialize the ocean sound if volume is set
+      if (GlobalTones.getOceanVolume() > 0) {
+        await GlobalTones.initOceanSound();
+      }
+    };
+    
+    // Start the audio system
+    initAudio();
+    
+    // Cleanup when navigating away
+    return () => {
+      // Pause the tones but don't clear them, so they can be restored when returning
+      GlobalTones.pauseAllTones();
+    };
+  }, []);
   
   // Show privacy notice when someone arrives to the site or after 15 min
   useEffect(() => {

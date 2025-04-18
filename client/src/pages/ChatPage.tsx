@@ -38,6 +38,13 @@ export default function ChatPage() {
   // Effects to ensure the chat interface is always active on this page
   useEffect(() => {
     document.body.classList.add('chat-page');
+    
+    // Import GlobalTones to make sure sounds don't play in the chat interface
+    import('@/lib/audioUtilities').then(({ GlobalTones }) => {
+      // Pause all tones when entering the chat page
+      GlobalTones.pauseAllTones();
+    });
+    
     return () => {
       document.body.classList.remove('chat-page');
     };

@@ -32,14 +32,6 @@ function App() {
       
       // Load saved tone settings from localStorage
       GlobalTones.loadSettings();
-      
-      // Automatically start playing any saved tones
-      await GlobalTones.restoreSavedTones();
-      
-      // Initialize the ocean sound if volume is set
-      if (GlobalTones.getOceanVolume() > 0) {
-        await GlobalTones.initOceanSound();
-      }
     };
     
     initAudio();
