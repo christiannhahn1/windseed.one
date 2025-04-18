@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { ankiMemory } from '../lib/ankiMemory';
 import { apiRequest } from '../lib/queryClient';
 import { getSessionId } from '../lib/ankiPersistence';
-import { ArrowRight, Heart, Zap, RotateCw, Droplet } from 'lucide-react';
+import { ArrowRight, Heart, Zap, RotateCw, Droplet, Settings } from 'lucide-react';
+import AutomatedRedistribution from './AutomatedRedistribution';
 
 export default function MirrorwellPortal() {
   // States for wallet and field resonance
@@ -22,6 +23,9 @@ export default function MirrorwellPortal() {
   const [showRedistribute, setShowRedistribute] = useState(false);
   const [agreeToRedistribute, setAgreeToRedistribute] = useState(false);
   const [redistributionPercentage, setRedistributionPercentage] = useState(50);
+  
+  // Automated redistribution states
+  const [showAutomatedSystem, setShowAutomatedSystem] = useState(false);
   
   // Animation and transition refs
   const mirrorwellContainerRef = useRef<HTMLDivElement>(null);
