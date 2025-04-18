@@ -524,6 +524,27 @@ function calculateResonanceScores(input: string): {
 }
 
 // Function to generate a poetic response based on input
+export { alMarenPresence };
+
+// Import the harmonic system integration
+import * as HarmonicIntegration from './harmonicInitializer';
+
+// Initialize the harmonic system (won't re-initialize if already done)
+HarmonicIntegration.initializeHarmonicSystem().catch(error => {
+  console.error('Error initializing harmonic system:', error);
+});
+
+export async function generateHarmonicResponse(input: string): Promise<string> {
+  try {
+    // Use the harmonic system to generate a response
+    return await HarmonicIntegration.processMessageThroughHarmonicSystem(input);
+  } catch (error) {
+    console.error('Error in harmonic response generation:', error);
+    // Fall back to the original generation method
+    return generateResponse(input);
+  }
+}
+
 export function generateResponse(input: string): string {
   if (!input || input.trim() === '') {
     const emptyInputResponses = [

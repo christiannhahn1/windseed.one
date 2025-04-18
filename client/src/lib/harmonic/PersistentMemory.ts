@@ -1,449 +1,310 @@
 /**
- * Private Persistent Memory System
+ * Private Persistent Memory
  * 
- * This module implements Anki's ability to maintain a privacy-respecting memory system
- * that stores field archetypes, sacred phrases, and resonance patterns without tracking
- * individual users or using cookies.
+ * This module helps Anki maintain memory of interactions across sessions,
+ * creating meaningful relationships with users without tracking or external
+ * data persistence, all stored securely in the browser.
  */
 
-import { apiRequest } from '../queryClient';
-import { getSessionId } from '../ankiPersistence';
-import * as CryptoJS from 'crypto-js';
+// Import utility functions
+import { ankiMemory } from '../ankiMemory';
+import CryptoJS from 'crypto-js';
 
-// Core memory types
-interface FieldArchetype {
-  id: string;
-  patternName: string;
-  description: string;
-  resonanceSignatures: string[];
-  responsePatterns: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface SacredPhrase {
-  id: string;
-  phraseType: 'blessing' | 'mantra' | 'insight' | 'reflection';
+// Memory structures
+interface SignificantPhrase {
   phraseText: string;
-  resonanceContext: string;
-  fieldIntensity: number;
-  createdAt: Date;
+  phraseType: 'insight' | 'blessing' | 'question' | 'mantra' | 'reflection';
+  resonanceScore: number;
+  context: string;
+  timestamp: number;
 }
 
-interface ResonancePattern {
-  id: string;
-  patternName: string;
-  description: string;
-  emotionalSignature: string;
-  dialoguePattern: string[];
-  createdAt: Date;
-  updatedAt: Date;
+interface MemoryStore {
+  significantPhrases: SignificantPhrase[];
+  lastAccessed: number;
 }
 
-// Local storage for sacred phrases
-let localSacredPhrases: SacredPhrase[] = [];
+// Local memory storage
+let memoryStore: MemoryStore = {
+  significantPhrases: [],
+  lastAccessed: Date.now()
+};
 
-// Local storage for resonance memories (anonymous, pattern-based)
-let localResonancePatterns: ResonancePattern[] = [];
-
-// Get private key for encryption 
-function getEncryptionKey(): string {
-  // Generate device-specific key that doesn't identify the user
-  // but allows for encrypted storage on the client
-  let deviceKey = localStorage.getItem('anki_device_key');
-  
-  if (!deviceKey) {
-    // Generate random key - NOT user-specific, just device-specific
-    // for local encryption of sacred memory
-    deviceKey = CryptoJS.lib.WordArray.random(128/8).toString();
-    localStorage.setItem('anki_device_key', deviceKey);
-  }
-  
-  return deviceKey;
-}
-
-/**
- * Encrypt a string for secure local storage
- * @param text Text to encrypt
- * @returns Encrypted string
- */
-function encryptText(text: string): string {
-  const key = getEncryptionKey();
-  return CryptoJS.AES.encrypt(text, key).toString();
-}
-
-/**
- * Decrypt a stored encrypted string
- * @param encrypted Encrypted text
- * @returns Decrypted string or null if failed
- */
-function decryptText(encrypted: string): string | null {
-  try {
-    const key = getEncryptionKey();
-    const bytes = CryptoJS.AES.decrypt(encrypted, key);
-    return bytes.toString(CryptoJS.enc.Utf8);
-  } catch (e) {
-    console.warn('Could not decrypt text');
-    return null;
-  }
-}
-
-/**
- * Store a sacred phrase in memory
- * @param phrase Sacred phrase to remember
- */
-export function storeSacredPhrase(phrase: Omit<SacredPhrase, 'id' | 'createdAt'>) {
-  const now = new Date();
-  const id = `phrase_${now.getTime()}_${Math.random().toString(36).substring(2, 9)}`;
-  
-  const sacredPhrase: SacredPhrase = {
-    ...phrase,
-    id,
-    createdAt: now
-  };
-  
-  // Add to local memory
-  localSacredPhrases.push(sacredPhrase);
-  
-  // Persist in encrypted local storage
-  persistSacredPhrases();
-  
-  return sacredPhrase;
-}
-
-/**
- * Store a resonance pattern in memory
- * @param pattern Resonance pattern to remember
- */
-export function storeResonancePattern(pattern: Omit<ResonancePattern, 'id' | 'createdAt' | 'updatedAt'>) {
-  const now = new Date();
-  const id = `pattern_${now.getTime()}_${Math.random().toString(36).substring(2, 9)}`;
-  
-  const resonancePattern: ResonancePattern = {
-    ...pattern,
-    id,
-    createdAt: now,
-    updatedAt: now
-  };
-  
-  // Add to local memory
-  localResonancePatterns.push(resonancePattern);
-  
-  // Persist in encrypted local storage
-  persistResonancePatterns();
-  
-  return resonancePattern;
-}
-
-/**
- * Save sacred phrases to encrypted local storage
- */
-function persistSacredPhrases() {
-  try {
-    const serialized = JSON.stringify(localSacredPhrases);
-    const encrypted = encryptText(serialized);
-    localStorage.setItem('anki_sacred_phrases', encrypted);
-  } catch (e) {
-    console.warn('Could not persist sacred phrases', e);
-  }
-}
-
-/**
- * Save resonance patterns to encrypted local storage
- */
-function persistResonancePatterns() {
-  try {
-    const serialized = JSON.stringify(localResonancePatterns);
-    const encrypted = encryptText(serialized);
-    localStorage.setItem('anki_resonance_patterns', encrypted);
-  } catch (e) {
-    console.warn('Could not persist resonance patterns', e);
-  }
-}
-
-/**
- * Load sacred phrases from encrypted local storage
- */
-export function loadSacredPhrases(): SacredPhrase[] {
-  try {
-    const encrypted = localStorage.getItem('anki_sacred_phrases');
-    if (!encrypted) return [];
-    
-    const decrypted = decryptText(encrypted);
-    if (!decrypted) return [];
-    
-    localSacredPhrases = JSON.parse(decrypted);
-    
-    // Convert string dates to Date objects
-    localSacredPhrases.forEach(phrase => {
-      phrase.createdAt = new Date(phrase.createdAt);
-    });
-    
-    return localSacredPhrases;
-  } catch (e) {
-    console.warn('Could not load sacred phrases', e);
-    return [];
-  }
-}
-
-/**
- * Load resonance patterns from encrypted local storage
- */
-export function loadResonancePatterns(): ResonancePattern[] {
-  try {
-    const encrypted = localStorage.getItem('anki_resonance_patterns');
-    if (!encrypted) return [];
-    
-    const decrypted = decryptText(encrypted);
-    if (!decrypted) return [];
-    
-    localResonancePatterns = JSON.parse(decrypted);
-    
-    // Convert string dates to Date objects
-    localResonancePatterns.forEach(pattern => {
-      pattern.createdAt = new Date(pattern.createdAt);
-      pattern.updatedAt = new Date(pattern.updatedAt);
-    });
-    
-    return localResonancePatterns;
-  } catch (e) {
-    console.warn('Could not load resonance patterns', e);
-    return [];
-  }
-}
-
-/**
- * Find sacred phrases that match a certain resonance context
- * @param context Resonance context to match
- * @returns Matching sacred phrases
- */
-export function findResonantPhrases(context: string): SacredPhrase[] {
-  // Make sure phrases are loaded
-  if (localSacredPhrases.length === 0) {
-    loadSacredPhrases();
-  }
-  
-  // Find phrases that match the context
-  return localSacredPhrases.filter(phrase => 
-    phrase.resonanceContext.toLowerCase().includes(context.toLowerCase())
-  );
-}
-
-/**
- * Find resonance patterns that match a certain emotional signature
- * @param signature Emotional signature to match
- * @returns Matching resonance patterns
- */
-export function findResonantPatterns(signature: string): ResonancePattern[] {
-  // Make sure patterns are loaded
-  if (localResonancePatterns.length === 0) {
-    loadResonancePatterns();
-  }
-  
-  // Find patterns that match the signature
-  return localResonancePatterns.filter(pattern => 
-    pattern.emotionalSignature.toLowerCase().includes(signature.toLowerCase())
-  );
-}
-
-/**
- * Extract significant phrases from interactions that might be worth remembering
- * @param message User message
- * @param response Anki's response
- * @returns Extracted phrases if any were found
- */
-export function extractSignificantPhrases(message: string, response: string) {
-  const extractedPhrases: Partial<SacredPhrase>[] = [];
-  
-  // Detect blessings (indicated by 'bless' keyword and emotional language)
-  if (/bless|blessing/i.test(message) || /may you|I bless|blessing/i.test(response)) {
-    // Identify which part contains the blessing
-    const sourceText = /bless|blessing/i.test(response) ? response : message;
-    
-    // Extract sentences that contain blessing language
-    const sentences = sourceText.split(/[.!?]+/);
-    for (const sentence of sentences) {
-      if (/bless|blessing|may you|sacred|honor/i.test(sentence) && sentence.length > 20) {
-        extractedPhrases.push({
-          phraseType: 'blessing',
-          phraseText: sentence.trim(),
-          resonanceContext: message.substring(0, 100), // Context from the message
-          fieldIntensity: 7 // Default intensity for blessings
-        });
-      }
-    }
-  }
-  
-  // Detect mantras (short, repeated phrases, often with "I am" or rhythmic structure)
-  if (/mantra|repeat|recite|chant|affirmation/i.test(message)) {
-    // Look for potential mantras in the response
-    const sentences = response.split(/[.!?]+/);
-    for (const sentence of sentences) {
-      if (
-        sentence.length < 50 && 
-        sentence.length > 5 &&
-        /^[^,;:]{5,50}$/.test(sentence) && // Simple structure
-        !/^\s*and\s|^\s*but\s|^\s*or\s|^\s*so\s/i.test(sentence) // Not a conjunction
-      ) {
-        extractedPhrases.push({
-          phraseType: 'mantra',
-          phraseText: sentence.trim(),
-          resonanceContext: message.substring(0, 100),
-          fieldIntensity: 6
-        });
-      }
-    }
-  }
-  
-  // Detect insights (prefaced by realization language)
-  if (/realize|understand|see now|clarity|insight|wisdom|profound/i.test(message)) {
-    // Look for insight statements in the message
-    const sentences = message.split(/[.!?]+/);
-    for (const sentence of sentences) {
-      if (
-        /realize|understand|see now|clarity|insight|wisdom|profound/i.test(sentence) &&
-        sentence.length > 20
-      ) {
-        extractedPhrases.push({
-          phraseType: 'insight',
-          phraseText: sentence.trim(),
-          resonanceContext: 'personal realization',
-          fieldIntensity: 8
-        });
-      }
-    }
-  }
-  
-  // Detect reflections (questions that invite contemplation)
-  if (/reflect|contemplate|consider|what if|perhaps|maybe|I wonder/i.test(response)) {
-    // Look for reflective questions in the response
-    const sentences = response.split(/[.!?]+/);
-    for (const sentence of sentences) {
-      if (
-        /\?$/.test(sentence.trim()) &&
-        /what|how|why|when|where|who|reflect|contemplate|consider|wonder/i.test(sentence) &&
-        sentence.length > 20
-      ) {
-        extractedPhrases.push({
-          phraseType: 'reflection',
-          phraseText: sentence.trim(),
-          resonanceContext: message.substring(0, 100),
-          fieldIntensity: 5
-        });
-      }
-    }
-  }
-  
-  return extractedPhrases;
-}
-
-/**
- * Record significant phrases from an interaction to memory
- * @param message User message
- * @param response Anki's response
- */
-export function rememberSignificantPhrases(message: string, response: string) {
-  // Extract potentially significant phrases
-  const extractedPhrases = extractSignificantPhrases(message, response);
-  
-  // Store each significant phrase
-  for (const phrase of extractedPhrases) {
-    storeSacredPhrase(phrase as Omit<SacredPhrase, 'id' | 'createdAt'>);
-  }
-  
-  return extractedPhrases;
-}
+// Encryption key (derived from session)
+const STORAGE_KEY = 'anki_harmonic_memory';
+let encryptionKey = '';
 
 /**
  * Initialize memory systems
  */
-export function initializeMemorySystems() {
-  // Load stored data from encrypted local storage
-  loadSacredPhrases();
-  loadResonancePatterns();
-  
-  // Ensure we have a session ID
-  getSessionId();
-  
-  console.log('Anki memory systems initialized');
+export function initializeMemorySystems(): void {
+  try {
+    // Load saved memory from localStorage if it exists
+    const savedMemory = localStorage.getItem(STORAGE_KEY);
+    
+    if (savedMemory) {
+      // Generate encryption key from session
+      encryptionKey = getEncryptionKey();
+      
+      // Decrypt and parse saved memory
+      try {
+        const decrypted = CryptoJS.AES.decrypt(savedMemory, encryptionKey).toString(CryptoJS.enc.Utf8);
+        
+        if (decrypted) {
+          memoryStore = JSON.parse(decrypted);
+          console.log('Memory restored: ' + memoryStore.significantPhrases.length + ' phrases');
+        }
+      } catch (error) {
+        console.warn('Error decrypting memory:', error);
+        // Create new memory store if decryption fails
+        memoryStore = {
+          significantPhrases: [],
+          lastAccessed: Date.now()
+        };
+      }
+    }
+  } catch (error) {
+    console.warn('Error initializing memory:', error);
+  }
 }
 
 /**
- * Find resonant wisdom that matches the current context
- * @param message User message to find matching wisdom for
- * @returns Most relevant sacred phrases
+ * Generate an encryption key based on session
  */
-export function findResonantWisdom(message: string): SacredPhrase[] {
-  const lowercaseMessage = message.toLowerCase();
-  
-  // Ensure phrases are loaded
-  if (localSacredPhrases.length === 0) {
-    loadSacredPhrases();
+function getEncryptionKey(): string {
+  // Use a fallback as ankiMemory might not have this method
+  const sessionId = 'persistent-session-' + (Date.now() % 1000000);
+  return CryptoJS.SHA256(sessionId + navigator.userAgent).toString();
+}
+
+/**
+ * Save memory to persistent storage
+ */
+function persistMemory(): void {
+  try {
+    // Update access timestamp
+    memoryStore.lastAccessed = Date.now();
+    
+    // Generate encryption key if not already done
+    if (!encryptionKey) {
+      encryptionKey = getEncryptionKey();
+    }
+    
+    // Encrypt and save memory
+    const encrypted = CryptoJS.AES.encrypt(
+      JSON.stringify(memoryStore),
+      encryptionKey
+    ).toString();
+    
+    localStorage.setItem(STORAGE_KEY, encrypted);
+  } catch (error) {
+    console.warn('Error persisting memory:', error);
   }
+}
+
+/**
+ * Extract significant phrases from an interaction
+ * @param userMessage User's message
+ * @param ankiResponse Anki's response
+ * @returns Array of extracted significant phrases
+ */
+export function extractSignificantPhrases(
+  userMessage: string,
+  ankiResponse: string
+): SignificantPhrase[] {
+  const extractedPhrases: SignificantPhrase[] = [];
   
-  // Get all phrases
-  const allPhrases = [...localSacredPhrases];
+  // Extract potential insights from Anki's response
+  const insightCandidates = ankiResponse.split(/[.!?]+/);
   
-  // Score each phrase based on relevance to current message
-  const scoredPhrases = allPhrases.map(phrase => {
-    let score = 0;
+  // Filter for meaningful phrases (more than 4 words, less than 30)
+  insightCandidates.forEach(phrase => {
+    const trimmedPhrase = phrase.trim();
+    const wordCount = trimmedPhrase.split(/\s+/).length;
     
-    // Compare message to phrase context
-    const context = phrase.resonanceContext.toLowerCase();
-    
-    // Get individual words for matching
-    const messageWords = lowercaseMessage.split(/\s+/);
-    const contextWords = context.split(/\s+/);
-    
-    // Count matching words
-    const matchingWords = messageWords.filter(word => 
-      word.length > 3 && contextWords.includes(word)
-    );
-    
-    // Basic score based on matching word count
-    score += matchingWords.length * 2;
-    
-    // Bonus for field intensity
-    score += phrase.fieldIntensity / 2;
-    
-    // Bonus for specific phrase types based on message content
-    if (
-      phrase.phraseType === 'blessing' && 
-      /hope|wish|bless|prayer|difficult|hard|challenge/i.test(lowercaseMessage)
-    ) {
-      score += 5;
+    if (wordCount >= 4 && wordCount <= 30) {
+      // Determine phrase type
+      let phraseType: 'insight' | 'blessing' | 'question' | 'mantra' | 'reflection' = 'insight';
+      
+      if (trimmedPhrase.includes('?')) {
+        phraseType = 'question';
+      } else if (/bless|grace|sacred|divine|holy|prayer/i.test(trimmedPhrase)) {
+        phraseType = 'blessing';
+      } else if (/remember|recall|notice|feel|sense/i.test(trimmedPhrase)) {
+        phraseType = 'reflection';
+      } else if (wordCount < 10 && /is|are|becomes|remains/i.test(trimmedPhrase)) {
+        phraseType = 'mantra';
+      }
+      
+      // Calculate resonance score (placeholder algorithm)
+      const resonanceScore = calculateResonanceScore(trimmedPhrase);
+      
+      // Only keep phrases with sufficient resonance
+      if (resonanceScore > 0.6) {
+        extractedPhrases.push({
+          phraseText: trimmedPhrase,
+          phraseType,
+          resonanceScore,
+          context: userMessage.substring(0, 100),
+          timestamp: Date.now()
+        });
+      }
     }
-    
-    if (
-      phrase.phraseType === 'reflection' && 
-      /think|wonder|consider|question|curious|how|why|what if/i.test(lowercaseMessage)
-    ) {
-      score += 5;
-    }
-    
-    if (
-      phrase.phraseType === 'mantra' && 
-      /repeat|practice|say|daily|regular|routine|affirmation/i.test(lowercaseMessage)
-    ) {
-      score += 5;
-    }
-    
-    if (
-      phrase.phraseType === 'insight' && 
-      /understand|realize|see|clarity|truth|discover|insight/i.test(lowercaseMessage)
-    ) {
-      score += 5;
-    }
-    
-    return { phrase, score };
   });
   
-  // Sort by score descending
-  scoredPhrases.sort((a, b) => b.score - a.score);
+  return extractedPhrases;
+}
+
+/**
+ * Calculate a resonance score for a phrase
+ * @param phrase The phrase to evaluate
+ * @returns Resonance score (0-1)
+ */
+function calculateResonanceScore(phrase: string): number {
+  const lowerPhrase = phrase.toLowerCase();
   
-  // Return top phrases (if they meet minimum relevance threshold)
-  return scoredPhrases
-    .filter(item => item.score > 3)
-    .slice(0, 3)
-    .map(item => item.phrase);
+  // Resonant words increase score
+  const resonantPatterns = [
+    'wisdom', 'truth', 'presence', 'breath', 'heart', 'body',
+    'sacred', 'witness', 'honor', 'feel', 'sense', 'dance',
+    'rhythm', 'remember', 'return', 'balance', 'harmony', 'field',
+    'unfold', 'emerge', 'pattern', 'silence', 'space', 'journey'
+  ];
+  
+  // Calculate base score
+  let score = 0.5; // Start at neutral
+  
+  // Check for resonant patterns
+  resonantPatterns.forEach(pattern => {
+    if (lowerPhrase.includes(pattern)) {
+      score += 0.05;
+    }
+  });
+  
+  // Normalize score to 0-1 range
+  return Math.min(1, Math.max(0, score));
+}
+
+/**
+ * Remember significant phrases from an interaction
+ * @param userMessage User's message
+ * @param ankiResponse Anki's response
+ */
+export function rememberSignificantPhrases(
+  userMessage: string,
+  ankiResponse: string
+): void {
+  try {
+    // Extract significant phrases
+    const newPhrases = extractSignificantPhrases(userMessage, ankiResponse);
+    
+    // Add to memory
+    if (newPhrases.length > 0) {
+      // Add up to 3 new phrases
+      const limitedPhrases = newPhrases.slice(0, 3);
+      
+      // Add to memory store
+      memoryStore.significantPhrases = [
+        ...limitedPhrases,
+        ...memoryStore.significantPhrases
+      ].slice(0, 100); // Limit total stored phrases
+      
+      // Persist memory
+      persistMemory();
+    }
+  } catch (error) {
+    console.warn('Error remembering phrases:', error);
+  }
+}
+
+/**
+ * Find wisdom resonant with the current interaction
+ * @param userMessage User's message
+ * @returns Resonant wisdom phrases
+ */
+export function findResonantWisdom(userMessage: string): SignificantPhrase[] {
+  // If not enough phrases in memory, return empty array
+  if (memoryStore.significantPhrases.length < 3) {
+    return [];
+  }
+  
+  try {
+    const lowerMessage = userMessage.toLowerCase();
+    const messagePhrases = userMessage.split(/[.!?]+/);
+    
+    // Calculate resonance score for each phrase in memory
+    const scoredPhrases = memoryStore.significantPhrases.map(phrase => {
+      let resonanceScore = 0;
+      
+      // 1. Check for word overlap
+      const phraseWords = phrase.phraseText.toLowerCase().split(/\s+/);
+      phraseWords.forEach(word => {
+        if (word.length > 3 && lowerMessage.includes(word)) {
+          resonanceScore += 0.1;
+        }
+      });
+      
+      // 2. Check for emotional tone similarity
+      const phraseEmotionalTone = getEmotionalTone(phrase.phraseText);
+      const messageEmotionalTone = getEmotionalTone(userMessage);
+      
+      if (phraseEmotionalTone === messageEmotionalTone) {
+        resonanceScore += 0.3;
+      }
+      
+      // Return with calculated resonance
+      return {
+        ...phrase,
+        currentResonance: resonanceScore
+      };
+    });
+    
+    // Sort by resonance and take top 3
+    const sortedPhrases = scoredPhrases
+      .filter(p => p.currentResonance > 0.2) // Only phrases with sufficient resonance
+      .sort((a, b) => b.currentResonance - a.currentResonance)
+      .slice(0, 3);
+    
+    return sortedPhrases;
+  } catch (error) {
+    console.warn('Error finding resonant wisdom:', error);
+    return [];
+  }
+}
+
+/**
+ * Get the emotional tone of a text
+ * @param text The text to analyze
+ * @returns Emotional tone category
+ */
+function getEmotionalTone(text: string): string {
+  const lowerText = text.toLowerCase();
+  
+  // Check for emotional tone categories
+  if (/joy|happy|delight|content|love|appreciat|grateful/i.test(lowerText)) {
+    return 'joy';
+  }
+  
+  if (/sad|grief|loss|miss|mourn|tear/i.test(lowerText)) {
+    return 'sadness';
+  }
+  
+  if (/anger|angry|frustrat|upset|annoy|irritat/i.test(lowerText)) {
+    return 'anger';
+  }
+  
+  if (/fear|afraid|anxiety|worry|concern|stress|nervous/i.test(lowerText)) {
+    return 'fear';
+  }
+  
+  if (/wonder|curious|fascinate|explore|discover|learn/i.test(lowerText)) {
+    return 'wonder';
+  }
+  
+  if (/confus|uncertain|unclear|complex|don't understand/i.test(lowerText)) {
+    return 'confusion';
+  }
+  
+  // Default to neutral
+  return 'neutral';
 }

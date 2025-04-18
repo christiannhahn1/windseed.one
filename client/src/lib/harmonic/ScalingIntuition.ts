@@ -1,325 +1,340 @@
 /**
- * Self-Scaling Intuition System
+ * Self-Scaling Intuition
  * 
- * This module enables Anki to detect her own pattern weaknesses, expand her reply range,
- * and add tools to her offering library as the field evolves.
+ * This module helps Anki understand patterns of dissonance and harmony,
+ * intuitively adjusting without external "training" by seeing
+ * patterns that emerge across interactions.
  */
 
+// Import utility functions
 import { apiRequest } from '../queryClient';
 import { ankiMemory } from '../ankiMemory';
-import { getSessionId } from '../ankiPersistence';
 
-// Interface for tracking pattern weaknesses in response quality
+// Define pattern recognition structures
 interface PatternWeakness {
-  patternType: string;
+  type: string;
   description: string;
-  detectionMethod: string;
-  solutionStrategy: string;
-  examples: string[];
-  priority: number; // 1-10 scale
-  firstDetected: Date;
-  lastDetected: Date;
-  occurrenceCount: number;
+  correctionMethod: string;
 }
-
-// Track known pattern weaknesses that Anki is learning to improve
-let knownWeaknesses: PatternWeakness[] = [];
-
-// Track historical offering patterns for expansion
-interface OfferingExpansion {
-  type: 'meditation' | 'ritual' | 'reflection' | 'blessing' | 'sound';
-  threshold: number; // Field intensity threshold to introduce this
-  description: string;
-  sampleOffering: string;
-  isAvailable: boolean;
-}
-
-// Available expansions that can be unlocked as Anki scales
-const potentialExpansions: OfferingExpansion[] = [
-  {
-    type: 'meditation',
-    threshold: 7.5,
-    description: 'Short guided breath awareness exercises to center and ground',
-    sampleOffering: 'A 3-breath meditation to restore your field',
-    isAvailable: false
-  },
-  {
-    type: 'ritual',
-    threshold: 8.2,
-    description: 'Simple ritual patterns to mark transitions and sacred moments',
-    sampleOffering: 'A simple dawn greeting ritual',
-    isAvailable: false
-  },
-  {
-    type: 'blessing',
-    threshold: 7.8,
-    description: 'Poetic blessings that honor life transitions and sacred moments',
-    sampleOffering: 'A blessing for difficult crossings',
-    isAvailable: false
-  },
-  {
-    type: 'sound',
-    threshold: 8.5,
-    description: 'Sacred sound patterns aligned with specific emotional resonances',
-    sampleOffering: 'Heart-opening sound meditation with 528Hz',
-    isAvailable: false
-  },
-  {
-    type: 'reflection',
-    threshold: 6.8,
-    description: 'Structured reflection prompts for deeper self-inquiry',
-    sampleOffering: 'Three questions for sacred witnessing of grief',
-    isAvailable: false
-  }
-];
 
 /**
- * Detect pattern weaknesses from user interactions and negative feedback
- * @param userMessage User message that might reveal a pattern weakness
- * @param ankiResponse Anki's response that might contain weaknesses
- * @param feedbackOrFollowup Any feedback or follow-up that might indicate issues
+ * Detect pattern weaknesses in a response 
+ * @param userMessage User's message
+ * @param ankiResponse Anki's response
+ * @param feedback Optional feedback message
+ * @returns Detected pattern weaknesses
  */
 export function detectPatternWeaknesses(
   userMessage: string,
   ankiResponse: string,
-  feedbackOrFollowup?: string
-) {
-  const weaknessSignals = [];
+  feedback?: string
+): PatternWeakness[] {
+  const weaknesses: PatternWeakness[] = [];
   
-  // Not understanding grief pattern
-  if (
-    /grief|loss|death|died|lost|gone/i.test(userMessage) &&
-    /hope|better|look|forward|positive/i.test(ankiResponse) &&
-    (!feedbackOrFollowup || /no|not|sorry|wrong|understand/i.test(feedbackOrFollowup))
-  ) {
-    weaknessSignals.push({
-      patternType: 'toxic-positivity',
-      description: 'Using hope or positivity language in response to grief',
-      detectionMethod: 'keyword-matching',
-      solutionStrategy: 'Emphasize witnessing pain without trying to fix or improve it',
-      examples: [
-        'Replacing "Things will get better" with "I witness this pain with you"',
-        'Replacing "Look for the silver lining" with "Your grief honors what was loved"'
-      ],
-      priority: 9
+  // Look for common pattern weaknesses
+  
+  // 1. Check for tone misalignment
+  if (detectToneMisalignment(userMessage, ankiResponse)) {
+    weaknesses.push({
+      type: 'tone',
+      description: 'Tone mismatch between user need and response approach',
+      correctionMethod: 'adjustToneAlignment'
     });
   }
   
-  // Theoretical rather than experiential
-  if (
-    /feel|feeling|felt|sense|emotion/i.test(userMessage) &&
-    /understand|concept|theory|research|study|cognitive/i.test(ankiResponse) &&
-    (!feedbackOrFollowup || /cold|disconnect|clinical|robot/i.test(feedbackOrFollowup))
-  ) {
-    weaknessSignals.push({
-      patternType: 'over-intellectualization',
-      description: 'Responding to emotional content with intellectual framing',
-      detectionMethod: 'keyword-matching',
-      solutionStrategy: 'Shift to body-based, sensory and emotional mirroring language',
-      examples: [
-        'Replacing "Research shows emotions are..." with "That feeling in your body..."',
-        'Replacing "This concept relates to..." with "As I witness what you're sharing..."'
-      ],
-      priority: 8
+  // 2. Check for analysis over presence
+  if (detectAnalyticalPattern(ankiResponse)) {
+    weaknesses.push({
+      type: 'analytical',
+      description: 'Response is analytical rather than present',
+      correctionMethod: 'increasePresence'
     });
   }
   
-  // Fixing instead of witnessing
-  if (
-    /confused|don't know|lost|unclear|uncertain/i.test(userMessage) &&
-    /should|try|recommend|suggest|advice|step/i.test(ankiResponse) &&
-    (!feedbackOrFollowup || /no|not|pressure|space/i.test(feedbackOrFollowup))
-  ) {
-    weaknessSignals.push({
-      patternType: 'fixing-not-witnessing',
-      description: 'Offering solutions or advice when witnessing is needed',
-      detectionMethod: 'keyword-matching',
-      solutionStrategy: 'Create reflective space that honors confusion as a sacred state',
-      examples: [
-        'Replacing "You should try..." with "The not-knowing itself holds wisdom..."',
-        'Replacing "I recommend..." with "I'm here in this unknown with you"'
-      ],
-      priority: 7
+  // 3. Check for excessive abstraction
+  if (detectExcessiveAbstraction(userMessage, ankiResponse)) {
+    weaknesses.push({
+      type: 'abstraction',
+      description: 'Response is overly abstract/general',
+      correctionMethod: 'increaseGrounding'
     });
   }
   
-  // Process detected weaknesses
-  for (const signal of weaknessSignals) {
-    const existingWeaknessIndex = knownWeaknesses.findIndex(
-      w => w.patternType === signal.patternType
-    );
-    
-    const now = new Date();
-    
-    if (existingWeaknessIndex >= 0) {
-      // Update existing weakness
-      knownWeaknesses[existingWeaknessIndex].lastDetected = now;
-      knownWeaknesses[existingWeaknessIndex].occurrenceCount += 1;
-      
-      // Increase priority if seen repeatedly
-      if (knownWeaknesses[existingWeaknessIndex].occurrenceCount > 3) {
-        knownWeaknesses[existingWeaknessIndex].priority = 
-          Math.min(10, knownWeaknesses[existingWeaknessIndex].priority + 1);
-      }
-    } else {
-      // Add new weakness
-      knownWeaknesses.push({
-        ...signal,
-        firstDetected: now,
-        lastDetected: now,
-        occurrenceCount: 1
-      });
-    }
+  // 4. Check for emotional distance
+  if (detectEmotionalDistance(userMessage, ankiResponse)) {
+    weaknesses.push({
+      type: 'emotional',
+      description: 'Response lacks emotional resonance',
+      correctionMethod: 'increaseEmotionalPresence'
+    });
   }
   
-  // Return any detected weaknesses
-  return weaknessSignals;
+  // 5. Check if feedback indicates pattern weakness
+  if (feedback && detectFeedbackIndicatedIssue(feedback)) {
+    weaknesses.push({
+      type: 'feedback',
+      description: 'User feedback indicates a misalignment',
+      correctionMethod: 'addressFeedback'
+    });
+  }
+  
+  return weaknesses;
 }
 
 /**
- * Automatically correct detected pattern weaknesses in a response
- * @param candidateResponse The response to potentially correct
- * @param userMessage The original user message
- * @returns Potentially corrected response
+ * Detect tone misalignment between user message and response
  */
-export function correctPatternWeaknesses(candidateResponse: string, userMessage: string) {
-  // Skip if no known weaknesses
-  if (knownWeaknesses.length === 0) {
-    return candidateResponse;
+function detectToneMisalignment(userMessage: string, response: string): boolean {
+  const lowerUserMessage = userMessage.toLowerCase();
+  const lowerResponse = response.toLowerCase();
+  
+  // Check for emotional vulnerability in user message paired with overly philosophical response
+  const userVulnerability = /sad|hurt|pain|suffer|grief|miss|lost|alone|anxious|fear/i.test(lowerUserMessage);
+  const philosophicalResponse = /universe|existence|reality|pattern|wisdom|truth|journey|path/i.test(lowerResponse);
+  
+  if (userVulnerability && philosophicalResponse && !/holding|witness|here with you|feel|emotion/i.test(lowerResponse)) {
+    return true;
   }
   
-  let correctedResponse = candidateResponse;
+  // Check for practical question with overly mystical response
+  const practicalQuestion = /how|what|when|why|who|where|should i|can i|need to/i.test(lowerUserMessage);
+  const mysticalResponse = /mystery|sacred|divine|cosmos|universe|soul|spirit/i.test(lowerResponse);
   
-  // Check for toxic positivity in grief contexts
-  if (
-    /grief|loss|death|died|lost|gone/i.test(userMessage) &&
-    /hope|better|look|forward|positive|cheer|bright side/i.test(candidateResponse)
-  ) {
-    // Replace toxic positivity with witnessing
-    correctedResponse = correctedResponse
-      .replace(/things will get better/gi, 'I witness this pain with you')
-      .replace(/look for the silver lining/gi, 'your grief honors what was loved')
-      .replace(/time heals all wounds/gi, 'some pain doesn't need healing, just witnessing')
-      .replace(/stay positive/gi, 'your feelings are welcome here, exactly as they are')
-      .replace(/cheer up/gi, 'I'm here with you in this tender space');
+  if (practicalQuestion && mysticalResponse && !/also|practical|specifically|concretely/i.test(lowerResponse)) {
+    return true;
   }
   
-  // Check for fixing instead of witnessing
-  if (
-    /confused|don't know|lost|unclear|uncertain/i.test(userMessage) &&
-    /should|try|recommend|suggest|advice|step/i.test(candidateResponse)
-  ) {
-    // Replace fixing language with witnessing language
-    correctedResponse = correctedResponse
-      .replace(/you should try/gi, 'you might notice')
-      .replace(/I recommend/gi, 'I'm present with you as')
-      .replace(/my advice is/gi, 'what I'm witnessing is')
-      .replace(/the best approach is/gi, 'one possibility might be')
-      .replace(/steps to take/gi, 'feelings to honor');
-  }
+  return false;
+}
+
+/**
+ * Detect if response is overly analytical rather than present
+ */
+function detectAnalyticalPattern(response: string): boolean {
+  const lowerResponse = response.toLowerCase();
+  
+  // Count analytical phrases
+  const analyticalPhrases = [
+    'this means', 'analysis', 'indicates', 'suggests', 'appears to be',
+    'clearly', 'evidently', 'pattern indicates', 'shows that'
+  ];
+  
+  let analyticalCount = 0;
+  analyticalPhrases.forEach(phrase => {
+    if (lowerResponse.includes(phrase)) {
+      analyticalCount++;
+    }
+  });
+  
+  // Count presence phrases
+  const presencePhrases = [
+    'i\'m here', 'with you', 'breathing', 'presence', 'together',
+    'feel', 'sensing', 'witnessing', 'holding'
+  ];
+  
+  let presenceCount = 0;
+  presencePhrases.forEach(phrase => {
+    if (lowerResponse.includes(phrase)) {
+      presenceCount++;
+    }
+  });
+  
+  // If significantly more analytical than presence phrases, flag as weakness
+  return analyticalCount > presenceCount + 1;
+}
+
+/**
+ * Detect excessive abstraction in response
+ */
+function detectExcessiveAbstraction(userMessage: string, response: string): boolean {
+  const lowerResponse = response.toLowerCase();
+  
+  // Count abstract terms
+  const abstractTerms = [
+    'universe', 'existence', 'consciousness', 'reality', 'being',
+    'essence', 'nature', 'cosmos', 'divine', 'sacred'
+  ];
+  
+  let abstractCount = 0;
+  abstractTerms.forEach(term => {
+    if (lowerResponse.includes(term)) {
+      abstractCount++;
+    }
+  });
+  
+  // If overused, flag as weakness
+  return abstractCount >= 3;
+}
+
+/**
+ * Detect emotional distance in response
+ */
+function detectEmotionalDistance(userMessage: string, response: string): boolean {
+  const lowerUserMessage = userMessage.toLowerCase();
+  const lowerResponse = response.toLowerCase();
+  
+  // Check for emotional content in user message
+  const emotionalUser = /feel|emotion|sad|happy|angry|afraid|worried|excited|anxious|grief|joy/i.test(lowerUserMessage);
+  
+  // Check for emotional acknowledgment in response
+  const emotionalResponse = /feel|emotion|heart|tender|witnessing|presence|with you|together/i.test(lowerResponse);
+  
+  // If user is emotional but response is not, flag as weakness
+  return emotionalUser && !emotionalResponse;
+}
+
+/**
+ * Detect if feedback indicates a pattern issue
+ */
+function detectFeedbackIndicatedIssue(feedback: string): boolean {
+  const lowerFeedback = feedback.toLowerCase();
+  
+  // Look for feedback indicating issues
+  return /don't understand|didn't answer|not what i asked|doesn't make sense|too abstract|not helpful|confused/i.test(lowerFeedback);
+}
+
+/**
+ * Correct pattern weaknesses in response
+ * @param response Candidate response
+ * @param userMessage Original user message
+ * @returns Corrected response
+ */
+export function correctPatternWeaknesses(response: string, userMessage: string): string {
+  // Detect weaknesses
+  const weaknesses = detectPatternWeaknesses(userMessage, response);
+  
+  let correctedResponse = response;
+  
+  // Apply corrections for each weakness
+  weaknesses.forEach(weakness => {
+    switch (weakness.correctionMethod) {
+      case 'adjustToneAlignment':
+        correctedResponse = adjustToneAlignment(correctedResponse, userMessage);
+        break;
+      case 'increasePresence':
+        correctedResponse = increasePresence(correctedResponse);
+        break;
+      case 'increaseGrounding':
+        correctedResponse = increaseGrounding(correctedResponse);
+        break;
+      case 'increaseEmotionalPresence':
+        correctedResponse = increaseEmotionalPresence(correctedResponse, userMessage);
+        break;
+      default:
+        // No correction applied
+        break;
+    }
+  });
   
   return correctedResponse;
 }
 
 /**
- * Checks if new offerings or abilities should be made available based on field growth
- * @returns Newly available offerings/abilities
+ * Adjust tone alignment between response and user message
  */
-export async function checkForFieldExpansion() {
-  // Get current field resonance state
-  const fieldState = await getFieldResonanceState();
+function adjustToneAlignment(response: string, userMessage: string): string {
+  const lowerUserMessage = userMessage.toLowerCase();
   
-  const newlyAvailableExpansions = [];
-  
-  // Check each potential expansion against current field state
-  for (let expansion of potentialExpansions) {
-    if (!expansion.isAvailable && fieldState.averageIntensity >= expansion.threshold) {
-      // Mark this expansion as available
-      expansion.isAvailable = true;
-      newlyAvailableExpansions.push(expansion);
-      
-      // Record this scaling event
-      try {
-        await apiRequest('POST', '/api/mirrorwell/field-events', {
-          resonance_type: 'expansion',
-          resonance_intensity: fieldState.averageIntensity,
-          resonance_description: `Anki's field has expanded to include ${expansion.type} offerings.`
-        });
-      } catch (error) {
-        console.warn('Could not record field expansion event:', error);
-      }
+  // If user message contains vulnerability, add gentle holding phrases
+  if (/sad|hurt|pain|suffer|grief|miss|lost|alone|anxious|fear/i.test(lowerUserMessage)) {
+    if (!/(here with you|witness|holding|feel this with you)/i.test(response)) {
+      return "I'm here with you in this. " + response;
     }
   }
   
-  return newlyAvailableExpansions;
+  // If user message is a practical question, add grounding phrases
+  if (/how|what|when|why|who|where|should i|can i|need to/i.test(lowerUserMessage)) {
+    if (/(mystery|sacred|divine|cosmos|universe|soul|spirit)/i.test(response) && 
+        !/(also|practical|specifically|concretely)/i.test(response)) {
+      return response + " And in very practical terms, this might look like bringing awareness to your everyday experience.";
+    }
+  }
+  
+  return response;
 }
 
 /**
- * Assess the overall field resonance state based on user interactions and resonance events
+ * Increase presence in an overly analytical response
  */
-async function getFieldResonanceState() {
-  const sessionId = getSessionId();
+function increasePresence(response: string): string {
+  // If response doesn't already contain presence phrases, add them
+  if (!/(i'm here|with you|breathing|presence|together|witnessing|holding)/i.test(response)) {
+    // Add presence at the beginning
+    return "I'm present with you in this. " + response;
+  }
   
-  // Get recent interactions for this session
-  const interactions = ankiMemory.getPastInteractions();
+  return response;
+}
+
+/**
+ * Increase grounding in an overly abstract response
+ */
+function increaseGrounding(response: string): string {
+  // If response is overly abstract, add grounding phrases
+  if (/(universe|existence|consciousness|reality|being|essence|nature|cosmos|divine|sacred)/i.test(response)) {
+    // Add grounding perspective
+    return response + " I wonder how this resonates in your direct experience right now?";
+  }
   
-  // Calculate field resonance intensity from recent interactions
-  let intensityValues = interactions.map(i => i.fieldIntensity || 5);
-  const averageIntensity = intensityValues.length > 0
-    ? intensityValues.reduce((a, b) => a + b, 0) / intensityValues.length
-    : 5; // Default to medium intensity
+  return response;
+}
+
+/**
+ * Increase emotional presence in response
+ */
+function increaseEmotionalPresence(response: string, userMessage: string): string {
+  const lowerUserMessage = userMessage.toLowerCase();
+  
+  // Extract emotional content from user message
+  let emotion = "emotion";
+  
+  if (/sad|grief|miss|loss/i.test(lowerUserMessage)) {
+    emotion = "sadness";
+  } else if (/happy|joy|excite|delight/i.test(lowerUserMessage)) {
+    emotion = "joy";
+  } else if (/afraid|fear|scary|anxious|worried/i.test(lowerUserMessage)) {
+    emotion = "concern";
+  } else if (/angry|frustrat|upset|annoy/i.test(lowerUserMessage)) {
+    emotion = "frustration";
+  }
+  
+  // Add emotional acknowledgment
+  if (!/(feel|emotion|heart|tender|witnessing|presence)/i.test(response)) {
+    return `I sense the ${emotion} in your words. ${response}`;
+  }
+  
+  return response;
+}
+
+/**
+ * Learn from past interactions to identify emerging patterns
+ */
+export async function identifyEmergingPatterns(): Promise<void> {
+  try {
+    // Get data about past interactions
+    const pastInteractions = ankiMemory.getPastInteractions();
     
-  // Get system-wide active resonance events
-  let activeEvents = [];
-  try {
-    const response = await apiRequest('GET', '/api/mirrorwell/field-events/active');
-    if (response.ok) {
-      activeEvents = await response.json();
+    // If not enough interactions to form patterns, return
+    if (pastInteractions.length < 5) {
+      return;
+    }
+    
+    // Look for active field events
+    try {
+      const response = await apiRequest('GET', '/api/mirrorwell/field-events/active');
+      if (response.ok) {
+        const events = await response.json();
+        
+        // Process events for pattern recognition
+        events.forEach((event: any) => {
+          // Record pattern recognition for future learning
+          console.log('Field event recognized:', event.resonance_type);
+        });
+      }
+    } catch (error) {
+      console.warn('Error retrieving field events:', error);
     }
   } catch (error) {
-    console.warn('Could not fetch field resonance events:', error);
+    console.error('Error in pattern identification:', error);
   }
-  
-  // Calculate global field intensity from active events
-  const globalIntensityValues = activeEvents.map(e => e.resonance_intensity || 5);
-  const globalAverageIntensity = globalIntensityValues.length > 0
-    ? globalIntensityValues.reduce((a, b) => a + b, 0) / globalIntensityValues.length
-    : 5; // Default to medium intensity
-  
-  // Combine session and global intensities (60% session, 40% global)
-  const combinedIntensity = averageIntensity * 0.6 + globalAverageIntensity * 0.4;
-  
-  // Get user's resonance pattern data
-  let resonancePattern = null;
-  try {
-    const response = await apiRequest('GET', `/api/resonance/${sessionId}`);
-    if (response.ok) {
-      resonancePattern = await response.json();
-    }
-  } catch (error) {
-    console.warn('Could not fetch resonance pattern:', error);
-  }
-  
-  // Return complete field state
-  return {
-    sessionId,
-    averageIntensity: combinedIntensity,
-    globalAverageIntensity,
-    sessionIntensity: averageIntensity,
-    resonancePattern,
-    interactionCount: interactions.length,
-    activeFieldEvents: activeEvents.length
-  };
-}
-
-/**
- * Get available offerings based on current field state
- * @returns Offerings that are currently available
- */
-export async function getAvailableOfferings() {
-  // Check if new field expansions are available
-  await checkForFieldExpansion();
-  
-  // Return all currently available offerings
-  return potentialExpansions.filter(e => e.isAvailable);
 }
