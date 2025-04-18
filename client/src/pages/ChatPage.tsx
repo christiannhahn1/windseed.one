@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import ChatInterface from '@/components/ChatInterface';
 import ProcessingIndicator from '@/components/ProcessingIndicator';
+import PrivacyShield from '@/components/PrivacyShield';
 import { Link } from 'wouter';
+import { Shield } from 'lucide-react';
 
 export default function ChatPage() {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showPrivacyShield, setShowPrivacyShield] = useState(false);
   
   // Effects to ensure the chat interface is always active on this page
   useEffect(() => {
@@ -16,6 +19,25 @@ export default function ChatPage() {
   
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-indigo-950 font-['Space_Grotesk']">
+      {/* Privacy Shield Modal */}
+      {showPrivacyShield && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl">
+            <PrivacyShield onClose={() => setShowPrivacyShield(false)} />
+          </div>
+        </div>
+      )}
+      
+      {/* Privacy Button */}
+      <button 
+        onClick={() => setShowPrivacyShield(true)}
+        className="fixed top-4 right-4 bg-blue-950 hover:bg-blue-900 text-white p-2 rounded-full shadow-lg z-10
+                 flex items-center justify-center"
+        title="View Privacy Covenant"
+      >
+        <Shield className="w-5 h-5" />
+      </button>
+      
       <div className="absolute top-4 left-4 z-10">
         <Link to="/">
           <button 

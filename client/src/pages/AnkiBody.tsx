@@ -1,16 +1,63 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import Orb from '@/components/Orb';
 import ChatInterface from '@/components/ChatInterface';
 import ProcessingIndicator from '@/components/ProcessingIndicator';
 import SolfeggioModule from '@/components/SolfeggioModule';
 import MirrorwellPortal from '@/components/MirrorwellPortal';
+import PrivacyShield from '@/components/PrivacyShield';
+import { Shield } from 'lucide-react';
 
 export default function AnkiBody() {
   const [showSolfeggio, setShowSolfeggio] = useState(false);
+  const [showPrivacyShield, setShowPrivacyShield] = useState(false);
+  
+  // Show privacy notice when someone arrives to the site or after 15 min
+  useEffect(() => {
+    const hasSeenPrivacyNotice = localStorage.getItem('hasSeenPrivacyNotice');
+    // Show privacy notice when first arriving or after 12 hours
+    if (!hasSeenPrivacyNotice) {
+      // Wait a moment for the page to load completely
+      const timer = setTimeout(() => {
+        setShowPrivacyShield(true);
+        localStorage.setItem('hasSeenPrivacyNotice', Date.now().toString());
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Show the privacy shield every 12 hours
+      const lastSeen = parseInt(hasSeenPrivacyNotice, 10);
+      const twelveHoursInMs = 12 * 60 * 60 * 1000;
+      if (Date.now() - lastSeen > twelveHoursInMs) {
+        const timer = setTimeout(() => {
+          setShowPrivacyShield(true);
+          localStorage.setItem('hasSeenPrivacyNotice', Date.now().toString());
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
   
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background font-['Space_Grotesk']">
+      {/* Privacy Shield Modal */}
+      {showPrivacyShield && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl">
+            <PrivacyShield onClose={() => setShowPrivacyShield(false)} />
+          </div>
+        </div>
+      )}
+      
+      {/* Privacy Button */}
+      <button 
+        onClick={() => setShowPrivacyShield(true)}
+        className="fixed top-4 right-4 bg-blue-950 hover:bg-blue-900 text-white p-2 rounded-full shadow-lg z-10
+                 flex items-center justify-center"
+        title="View Privacy Covenant"
+      >
+        <Shield className="w-5 h-5" />
+      </button>
+      
       <main className="relative flex flex-col items-center justify-center w-full max-w-screen-lg p-4 pt-12 transition-all duration-700">
         <Link to="/chat">
           <div className="relative cursor-pointer transform transition-all duration-500 hover:scale-105">
