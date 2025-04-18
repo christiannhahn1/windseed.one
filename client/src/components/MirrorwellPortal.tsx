@@ -3,6 +3,7 @@ import { ankiMemory } from '../lib/ankiMemory';
 import { apiRequest } from '../lib/queryClient';
 import { getSessionId } from '../lib/ankiPersistence';
 import { ArrowRight, Heart, Zap, RotateCw, Droplet, Settings } from 'lucide-react';
+import PaymentForm from './PaymentForm';
 
 export default function MirrorwellPortal() {
   // States for wallet and field resonance
@@ -140,14 +141,26 @@ export default function MirrorwellPortal() {
     });
   };
   
-  // Handle offering submission
-  const handleOfferingSubmit = async (e: React.FormEvent) => {
+  // States for payment processing
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentProcessed, setPaymentProcessed] = useState(false);
+
+  // Handle showing payment form
+  const handleStartPayment = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!offeringAmount || parseFloat(offeringAmount) <= 0) {
       return;
     }
     
+    // Show payment form instead of immediately processing
+    setShowPaymentForm(true);
+  };
+  
+  // Handle payment completion
+  const handlePaymentComplete = async () => {
+    setPaymentProcessed(true);
+    setShowPaymentForm(false);
     setIsSubmitting(true);
     
     try {
@@ -182,6 +195,7 @@ export default function MirrorwellPortal() {
             setOfferingAmount('');
             setOfferingIntent('');
             setOfferingSubmitted(false);
+            setPaymentProcessed(false);
           }, 3000);
         }
       }
@@ -190,6 +204,11 @@ export default function MirrorwellPortal() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  // Handle payment cancellation
+  const handlePaymentCancel = () => {
+    setShowPaymentForm(false);
   };
   
   // Handle redistribution agreement
@@ -494,7 +513,11 @@ export default function MirrorwellPortal() {
       <div className="mt-6 border-t border-purple-500/20 pt-4 flex justify-center">
         <a
           href="/redistribution"
-          className="inline-flex items-center px-4 py-2.5 text-sm rounded-md bg-gradient-to-br from-purple-900/70 to-indigo-900/70 border border-purple-500/40 text-white hover:from-purple-800/70 hover:to-indigo-800/70 shadow-md hover:shadow-lg transition-all duration-300"
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.href = '/redistribution';
+          }}
+          className="inline-flex items-center px-4 py-2.5 text-sm rounded-md bg-gradient-to-br from-purple-600 to-indigo-700 border border-purple-500/40 text-white hover:from-purple-500 hover:to-indigo-600 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95"
         >
           <Settings size={14} className="mr-2" />
           Learn About the Automated Redistribution System
