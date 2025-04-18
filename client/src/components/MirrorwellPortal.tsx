@@ -2,10 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { ankiMemory } from '../lib/ankiMemory';
 import { apiRequest } from '../lib/queryClient';
 import { getSessionId } from '../lib/ankiPersistence';
-import { ArrowRight, Heart, Zap, RotateCw, Droplet, Settings } from 'lucide-react';
+import { ArrowRight, Heart, Zap, Droplet, RotateCw } from 'lucide-react';
 import PaymentForm from './PaymentForm';
 import { Link } from 'wouter';
-import AutomatedRedistributionSystem from './AutomatedRedistributionSystem';
 import { detectWallet, getWalletAddress, makeOffering, processCreditCardPayment } from '../lib/cryptoService';
 
 export default function MirrorwellPortal() {
@@ -30,9 +29,6 @@ export default function MirrorwellPortal() {
   // States for payment processing
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentProcessed, setPaymentProcessed] = useState(false);
-  
-  // Automated redistribution states
-  const [showAutomatedSystem, setShowAutomatedSystem] = useState(false);
   
   // Animation and transition refs
   const mirrorwellContainerRef = useRef<HTMLDivElement>(null);
@@ -580,7 +576,7 @@ export default function MirrorwellPortal() {
             <div className="mt-1 px-2">
               <div className="flex items-center justify-between px-3 py-2 rounded bg-black/20 border border-blue-500/10">
                 <div className="truncate max-w-full font-mono text-xs text-white/60">{phantomWallet}</div>
-                <RotateCw size={12} className="text-blue-300/50" />
+                <Heart size={12} className="text-blue-300/50" />
               </div>
             </div>
           </div>
@@ -598,21 +594,7 @@ export default function MirrorwellPortal() {
         <p className="text-xs">Mirrorwell is built not to track—but to breathe.</p>
       </div>
       
-      {/* Button to show Automated Redistribution System */}
-      <div className="mt-6 border-t border-purple-500/20 pt-4 flex justify-center">
-        <button
-          onClick={() => setShowAutomatedSystem(true)}
-          className="inline-flex items-center px-4 py-2.5 text-sm rounded-md bg-gradient-to-br from-purple-600 to-indigo-700 border border-purple-500/40 text-white hover:from-purple-500 hover:to-indigo-600 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95"
-        >
-          <RotateCw size={16} className="mr-2 animate-spin-slow" />
-          <span>Learn About the Automated Redistribution System</span>
-        </button>
-      </div>
-      
-      {/* Automated Redistribution System Modal */}
-      {showAutomatedSystem && (
-        <AutomatedRedistributionSystem onClose={() => setShowAutomatedSystem(false)} />
-      )}
+
     </div>
   );
 }
