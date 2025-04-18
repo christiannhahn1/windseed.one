@@ -172,9 +172,15 @@ export default function SolfeggioModule() {
   // Stop all audio sources
   const stopAllAudio = () => {
     // Stop triad tones
-    triadGeneratorsRef.current.forEach(generator => {
+    triadGeneratorsRef.current.forEach((generator, index) => {
       if (generator) {
         generator.stop();
+        
+        // Also remove from global tones system if a triad is selected
+        if (selectedTriad !== 'none' && index < triads[selectedTriad]?.frequencies?.length) {
+          const frequency = triads[selectedTriad].frequencies[index];
+          GlobalTones.setTone(frequency, 0);
+        }
       }
     });
     triadGeneratorsRef.current = [];
@@ -185,12 +191,18 @@ export default function SolfeggioModule() {
       individualGeneratorRef.current.stop();
       individualGeneratorRef.current = null;
       setIsIndividualActive(false);
+      GlobalTones.setTone(individualFrequency, 0);
     }
     
     // Stop custom triad tones
-    customGeneratorsRef.current.forEach(generator => {
+    customGeneratorsRef.current.forEach((generator, index) => {
       if (generator) {
         generator.stop();
+        
+        // Also remove from global tones
+        if (index < customFrequencies.length) {
+          GlobalTones.setTone(customFrequencies[index], 0);
+        }
       }
     });
     customGeneratorsRef.current = [];
@@ -223,6 +235,19 @@ export default function SolfeggioModule() {
       const newActive = [...isActive];
       newActive[index] = value > 0;
       setIsActive(newActive);
+      
+      // Also update the global tone if a triad is selected
+      if (selectedTriad !== 'none') {
+        const triad = triads[selectedTriad];
+        const frequency = triad.frequencies[index];
+        const description = triad.descriptions[index].split(",")[0];
+        const shape = triad.toneShapes?.[index] || 
+                     solfeggioFrequencies.find(f => f.value === frequency)?.idealToneShape ||
+                     'singing-bowl';
+                     
+        // Update the global tone
+        GlobalTones.setTone(frequency, value, `${frequency}Hz - ${description}`, shape);
+      }
     }
   };
   
@@ -244,6 +269,18 @@ export default function SolfeggioModule() {
     if (individualGeneratorRef.current) {
       individualGeneratorRef.current.setVolume(value);
       setIsIndividualActive(value > 0);
+      
+      // Also update the global tone for cross-page continuity
+      if (isIndividualActive) {
+        const freqInfo = solfeggioFrequencies.find(f => f.value === individualFrequency);
+        const description = freqInfo?.description || "";
+        GlobalTones.setTone(
+          individualFrequency, 
+          value, 
+          `${individualFrequency}Hz - ${description.split(",")[0]}`,
+          individualShape
+        );
+      }
     }
   };
   
@@ -284,6 +321,15 @@ export default function SolfeggioModule() {
       const newActive = [...isCustomActive];
       newActive[index] = value > 0;
       setIsCustomActive(newActive);
+      
+      // Also update the global tone
+      const frequency = customFrequencies[index];
+      const freqInfo = solfeggioFrequencies.find(f => f.value === frequency);
+      const description = freqInfo?.description || "Sacred Frequency";
+      const shape = customShapes[index];
+      
+      // Update in the global system
+      GlobalTones.setTone(frequency, value, `${frequency}Hz - ${description.split(",")[0]}`, shape);
     }
   };
   

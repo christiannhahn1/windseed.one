@@ -28,8 +28,10 @@ export const GlobalTones = {
     stop: () => void;
     setVolume: (value: number) => void;
     isPlaying: () => boolean;
+    getVolume: () => number;
   },
   oceanVolume: 0,
+  masterVolume: 1.0, // Master volume multiplier for all tones
   
   // Initialize the system
   async initialize() {

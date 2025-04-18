@@ -1,181 +1,201 @@
-import React, { useState, useEffect } from 'react';
-import { GlobalTones } from '@/lib/audioUtilities';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
-import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, Music } from 'lucide-react';
-
-// Frequencies data with names for the display
-const SOLFEGGIO_FREQUENCIES = [
-  { value: 396, name: "Liberation", description: "Liberating guilt and fear" },
-  { value: 417, name: "Transformation", description: "Undoing situations and facilitating change" },
-  { value: 432, name: "Coherence", description: "Connecting to the heartbeat of the Earth" },
-  { value: 528, name: "Love", description: "Transformation and miracles, DNA repair" },
-  { value: 639, name: "Connection", description: "Connecting relationships, harmony with self and others" },
-  { value: 741, name: "Expression", description: "Awakening intuition, expression, solutions" },
-  { value: 852, name: "Return", description: "Returning to spiritual order, spiritual homecoming" },
-  { value: 963, name: "Awakening", description: "Awakening to divine consciousness, higher dimensional connection" },
-];
-
-// Get the display name for a frequency
-const getFrequencyName = (freq: number): string => {
-  const found = SOLFEGGIO_FREQUENCIES.find(f => f.value === freq);
-  return found ? `${freq}Hz - ${found.name}` : `${freq}Hz`;
-};
+import { useState, useEffect } from 'react';
+import { GlobalTones, ToneShape } from '../lib/audioUtilities';
+import { X, Music, Volume2, Volume1, VolumeX, ChevronUp, ChevronDown } from 'lucide-react';
 
 export const GlobalToneController: React.FC = () => {
-  const [open, setOpen] = useState(false);
-  const [activeTones, setActiveTones] = useState<Array<{
-    frequency: number;
-    volume: number;
-    name: string;
-    shape: string;
-  }>>([]);
-  const [hasActiveTones, setHasActiveTones] = useState(false);
+  const [activeTones, setActiveTones] = useState<{frequency: number, volume: number, name: string, shape: ToneShape}[]>([]);
+  const [isMinimized, setIsMinimized] = useState(true);
+  const [masterVolume, setMasterVolume] = useState(1.0);
   const [oceanVolume, setOceanVolume] = useState(0);
+  const [isOceanPlaying, setIsOceanPlaying] = useState(false);
 
-  // Refresh the active tones list
-  const refreshActiveTones = () => {
-    const tones = GlobalTones.getActiveTones();
-    setActiveTones(tones);
-    setHasActiveTones(tones.length > 0);
-    setOceanVolume(GlobalTones.oceanVolume);
-  };
-
-  // Initialize on component mount
+  // Get active tones from global system
   useEffect(() => {
-    // Initialize the global tones system when the component mounts
-    const initSystem = async () => {
-      await GlobalTones.initialize();
-      refreshActiveTones();
+    const loadActiveTones = () => {
+      const tones = GlobalTones.getActiveTones();
+      setActiveTones(tones);
+      
+      // Check if ocean sound is playing
+      const oceanVol = GlobalTones.getOceanVolume();
+      setOceanVolume(oceanVol);
+      setIsOceanPlaying(oceanVol > 0);
+      
+      // Get the master volume
+      setMasterVolume(GlobalTones.getMasterVolume());
     };
     
-    initSystem();
+    // Initial load
+    loadActiveTones();
     
-    // Set up an interval to refresh the tone status every 2 seconds
-    const intervalId = setInterval(refreshActiveTones, 2000);
+    // Set up interval to poll for changes
+    const interval = setInterval(loadActiveTones, 1000);
     
-    return () => {
-      clearInterval(intervalId);
-    };
+    return () => clearInterval(interval);
   }, []);
-
-  // Handle tone volume change
-  const handleToneVolumeChange = (frequency: number, volume: number) => {
+  
+  // Update a tone's volume
+  const updateToneVolume = (frequency: number, volume: number) => {
+    const newActiveTones = activeTones.map(tone => {
+      if (tone.frequency === frequency) {
+        return { ...tone, volume };
+      }
+      return tone;
+    });
+    
+    // Update in the global system
     GlobalTones.setTone(frequency, volume);
-    refreshActiveTones();
+    
+    // Update local state
+    setActiveTones(newActiveTones);
   };
-
-  // Handle ocean volume change
-  const handleOceanVolumeChange = (volume: number) => {
-    GlobalTones.setOceanVolume(volume);
-    setOceanVolume(volume);
+  
+  // Remove a tone
+  const removeTone = (frequency: number) => {
+    // Set volume to 0 in global system
+    GlobalTones.setTone(frequency, 0);
+    
+    // Remove from local state
+    setActiveTones(activeTones.filter(tone => tone.frequency !== frequency));
   };
-
-  // Stop all tones
-  const stopAllTones = () => {
-    GlobalTones.stopAllTones();
-    refreshActiveTones();
+  
+  // Toggle ocean sound
+  const toggleOceanSound = () => {
+    const newVolume = isOceanPlaying ? 0 : 0.2;
+    GlobalTones.setOceanVolume(newVolume);
+    setOceanVolume(newVolume);
+    setIsOceanPlaying(newVolume > 0);
   };
+  
+  // Update master volume
+  const updateMasterVolume = (volume: number) => {
+    GlobalTones.setMasterVolume(volume);
+    setMasterVolume(volume);
+  };
+  
+  // If there are no active tones, don't render the controller
+  if (activeTones.length === 0 && !isOceanPlaying) {
+    return null;
+  }
 
   return (
-    <div className="fixed bottom-3 right-3 z-50">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className={`rounded-full w-11 h-11 bg-gradient-to-br ${
-              hasActiveTones 
-                ? 'from-indigo-700 to-purple-800 shadow-lg shadow-purple-500/20' 
-                : 'from-gray-700 to-gray-800'
-            }`}
-          >
-            {hasActiveTones ? <Music className="h-5 w-5 text-white" /> : <VolumeX className="h-5 w-5 text-white" />}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="w-80 p-4 bg-black/90 backdrop-blur-lg border border-purple-500/30 shadow-xl shadow-purple-900/20 rounded-xl"
-          align="end"
-        >
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-md font-medium text-white">Sacred Tones Control</h3>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-8 px-2 text-xs hover:bg-red-900/40 text-red-300"
-                onClick={stopAllTones}
-              >
-                Stop All
-              </Button>
+    <div className={`fixed right-4 bottom-12 z-50 w-72 bg-black/80 backdrop-blur-md border border-purple-500/30 rounded-lg shadow-lg transition-all duration-300 ease-in-out ${isMinimized ? 'h-12' : 'h-auto max-h-[70vh] overflow-y-auto'}`}>
+      {/* Header with toggle */}
+      <div
+        className="flex items-center justify-between h-12 px-4 border-b border-purple-500/20 cursor-pointer"
+        onClick={() => setIsMinimized(!isMinimized)}
+      >
+        <div className="flex items-center">
+          <Music className="w-4 h-4 text-purple-300 mr-2" />
+          <span className="text-white text-sm font-medium">Sacred Tones</span>
+          {activeTones.length > 0 && (
+            <span className="text-white/70 text-xs ml-2">({activeTones.length})</span>
+          )}
+        </div>
+        <div className="text-white/70">
+          {isMinimized ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
+        </div>
+      </div>
+      
+      {/* Content - only visible when not minimized */}
+      {!isMinimized && (
+        <div className="px-4 py-2 space-y-4">
+          {/* Master volume control */}
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <span className="text-white/80 text-xs">Master Volume</span>
+              <div className="flex items-center">
+                {masterVolume === 0 ? (
+                  <VolumeX className="w-3 h-3 text-white/70" />
+                ) : masterVolume < 0.4 ? (
+                  <Volume1 className="w-3 h-3 text-white/70" />
+                ) : (
+                  <Volume2 className="w-3 h-3 text-white/70" />
+                )}
+              </div>
             </div>
-            
-            {activeTones.length === 0 ? (
-              <div className="text-sm text-white/60 py-2 text-center italic">
-                No active tones. Visit the Sacred Frequencies page to activate tones.
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                {activeTones.map((tone) => (
-                  <div key={tone.frequency} className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium text-white/90">
-                        {getFrequencyName(tone.frequency)}
-                      </div>
-                      <div className="text-xs text-white/50">
-                        {Math.round(tone.volume * 100)}%
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <VolumeX 
-                        className="h-3 w-3 text-white/50" 
-                        onClick={() => handleToneVolumeChange(tone.frequency, 0)}
-                      />
-                      <Slider
-                        value={[tone.volume]}
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        onValueChange={(values) => handleToneVolumeChange(tone.frequency, values[0])}
-                        className="flex-1"
-                      />
-                      <Volume2 className="h-4 w-4 text-white/50" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Ocean sound control */}
-            <div className="pt-2 border-t border-purple-500/20 mt-2">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-white/90">
-                  Ocean Soundscape
-                </div>
-                <div className="text-xs text-white/50">
-                  {Math.round(oceanVolume * 100)}%
-                </div>
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <VolumeX 
-                  className="h-3 w-3 text-white/50" 
-                  onClick={() => handleOceanVolumeChange(0)}
-                />
-                <Slider
-                  value={[oceanVolume]}
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  onValueChange={(values) => handleOceanVolumeChange(values[0])}
-                  className="flex-1"
-                />
-                <Volume2 className="h-4 w-4 text-white/50" />
-              </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={masterVolume}
+              onChange={(e) => updateMasterVolume(parseFloat(e.target.value))}
+              className="w-full h-1.5 accent-purple-500"
+            />
+          </div>
+          
+          {/* Ocean sound control */}
+          <div className="flex items-center justify-between">
+            <span className="text-white/80 text-xs">Ocean Ambient</span>
+            <div className="flex items-center">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={oceanVolume}
+                onChange={(e) => {
+                  const vol = parseFloat(e.target.value);
+                  GlobalTones.setOceanVolume(vol);
+                  setOceanVolume(vol);
+                  setIsOceanPlaying(vol > 0);
+                }}
+                className="w-20 h-1.5 accent-purple-500 mr-2"
+              />
+              <button
+                onClick={toggleOceanSound}
+                className={`text-xs px-2 py-0.5 rounded ${isOceanPlaying ? 'bg-purple-500/30 text-white' : 'bg-gray-700/50 text-white/70'}`}
+              >
+                {isOceanPlaying ? 'On' : 'Off'}
+              </button>
             </div>
           </div>
-        </PopoverContent>
-      </Popover>
+          
+          {/* Divider */}
+          <div className="border-t border-purple-500/20 pt-1">
+            <span className="text-white/60 text-xs">Active Frequencies</span>
+          </div>
+          
+          {/* Active tones list */}
+          <div className="space-y-3">
+            {activeTones.map((tone) => (
+              <div key={tone.frequency} className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-white text-xs font-medium">
+                      {tone.frequency} Hz
+                    </span>
+                    <span className="text-white/60 text-xs italic">{tone.name.split(' - ')[1] || 'Sacred Tone'}</span>
+                  </div>
+                  <button
+                    onClick={() => removeTone(tone.frequency)}
+                    className="p-1 rounded-full hover:bg-gray-700/50"
+                  >
+                    <X className="w-3 h-3 text-white/70" />
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={tone.volume}
+                  onChange={(e) => updateToneVolume(tone.frequency, parseFloat(e.target.value))}
+                  className="w-full h-1.5 accent-purple-500"
+                />
+                <div className="flex justify-between items-center mt-0.5">
+                  <span className="text-white/40 text-xs">{tone.shape}</span>
+                  <span className="text-white/40 text-xs">{Math.round(tone.volume * 100)}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
