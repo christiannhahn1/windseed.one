@@ -35,7 +35,7 @@ export default function MirrorwellPortal() {
     // Check for active field resonance events from the API
     const checkFieldEvents = async () => {
       try {
-        const events = await apiRequest('GET', '/api/mirrorwell/field-events/active', {});
+        const events = await apiRequest('/api/mirrorwell/field-events/active');
         const activeEvents = await events.json();
         
         if (activeEvents && activeEvents.length > 0) {
@@ -156,7 +156,13 @@ export default function MirrorwellPortal() {
         field_resonance: fieldExpression || 'neutral',
         session_id: getSessionId()
       };
-      const response = await apiRequest('POST', '/api/mirrorwell/offerings', payload);
+      const response = await apiRequest('/api/mirrorwell/offerings', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
       const result = await response.json();
       
@@ -192,12 +198,19 @@ export default function MirrorwellPortal() {
       // and perform the actual redistribution transaction
       
       // For now, we'll just record it in the database
-      await apiRequest('POST', '/api/mirrorwell/redistributions', {
+      const redistributionPayload = {
         source_offering_id: 'direct', // In a real implementation, this would be the offering ID
         redistributed_amount: (parseFloat(offeringAmount) * redistributionPercentage / 100).toFixed(2),
         currency_type: selectedCurrency,
         recipient_resonance: fieldExpression,
-        redistribution_reason: 'field_harmony_direct',
+        redistribution_reason: 'field_harmony_direct'
+      };
+      await apiRequest('/api/mirrorwell/redistributions', {
+        method: 'POST',
+        body: JSON.stringify(redistributionPayload),
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       // Reset the form
@@ -474,31 +487,7 @@ export default function MirrorwellPortal() {
         <p className="text-xs">Mirrorwell is built not to track—but to breathe.</p>
       </div>
       
-      {/* Add custom CSS */}
-      <style jsx>{`
-        .mirrorwell-pulse {
-          box-shadow: 0 0 15px rgba(147, 51, 234, 0.3);
-        }
-        
-        @keyframes glow {
-          0%, 100% { opacity: 0.6; }
-          50% { opacity: 1; }
-        }
-        
-        .bg-grid-pattern {
-          background-image: 
-            linear-gradient(to right, rgba(147, 51, 234, 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(147, 51, 234, 0.1) 1px, transparent 1px);
-          background-size: 20px 20px;
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0) translateX(0); }
-          25% { transform: translateY(-5px) translateX(5px); }
-          50% { transform: translateY(-10px) translateX(0); }
-          75% { transform: translateY(-5px) translateX(-5px); }
-        }
-      `}</style>
+{/* CSS styles added in index.css */}
     </div>
   );
 }

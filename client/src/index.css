@@ -299,3 +299,27 @@
     filter: blur(14px);
   }
 }
+
+/* Mirrorwell Portal animations */
+.mirrorwell-pulse {
+  box-shadow: 0 0 15px rgba(147, 51, 234, 0.3);
+}
+
+@keyframes glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(147, 51, 234, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(147, 51, 234, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  25% { transform: translateY(-5px) translateX(5px); }
+  50% { transform: translateY(-10px) translateX(0); }
+  75% { transform: translateY(-5px) translateX(-5px); }
+}
