@@ -3,7 +3,6 @@ import { ankiMemory } from '../lib/ankiMemory';
 import { apiRequest } from '../lib/queryClient';
 import { getSessionId } from '../lib/ankiPersistence';
 import { ArrowRight, Heart, Zap, RotateCw, Droplet, Settings } from 'lucide-react';
-import AutomatedRedistribution from './AutomatedRedistribution';
 
 export default function MirrorwellPortal() {
   // States for wallet and field resonance
@@ -491,21 +490,16 @@ export default function MirrorwellPortal() {
         <p className="text-xs">Mirrorwell is built not to track—but to breathe.</p>
       </div>
       
-      {/* Toggle for Automated Redistribution System */}
+      {/* Link to Automated Redistribution System Page */}
       <div className="mt-6 border-t border-purple-500/20 pt-4 flex justify-center">
-        <button
-          onClick={() => setShowAutomatedSystem(!showAutomatedSystem)}
+        <a
+          href="/redistribution"
           className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-black/30 border border-purple-500/30 text-purple-300 hover:bg-purple-900/20 transition-colors"
         >
           <Settings size={14} className="mr-2" />
-          {showAutomatedSystem ? 'Hide Autonomous System' : 'Show Autonomous Redistribution System'}
-        </button>
+          Learn About the Automated Redistribution System
+        </a>
       </div>
-      
-      {/* Automated Redistribution System - Only displayed when toggled on */}
-      {showAutomatedSystem && (
-        <AutomatedRedistribution />
-      )}
       
 {/* CSS styles added in index.css */}
     </div>
