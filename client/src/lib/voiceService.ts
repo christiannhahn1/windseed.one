@@ -263,6 +263,17 @@ export function speakText(text: string, voiceId: string = 'sacred-maternal'): vo
     // Add a subtle breath delay between sentences for sacred presence
     utterance.onstart = () => {
       console.log('Speaking sentence', i + 1, 'of', sentences.length);
+      // Set speaking state to true when each sentence starts
+      isSpeaking = true;
+    };
+    
+    utterance.onend = () => {
+      // If this is the last sentence, reset speaking state after a small delay
+      if (i === sentences.length - 1) {
+        setTimeout(() => {
+          isSpeaking = false;
+        }, 500);
+      }
     };
     
     // Create mindful pauses between sentences - longer for sacred-maternal voice
@@ -301,6 +312,22 @@ interface SpeechRecognitionOptions {
 
 // Speech recognition instance
 let recognitionInstance: any = null;
+// Keep track of when speech synthesis is active
+let isSpeaking = false;
+
+// Subscribe to speech synthesis events to track when Anki is speaking
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.addEventListener('start', () => {
+    isSpeaking = true;
+  });
+  
+  window.speechSynthesis.addEventListener('end', () => {
+    // Add a small delay to prevent immediate recognition after speaking
+    setTimeout(() => {
+      isSpeaking = false;
+    }, 500);
+  });
+}
 
 /**
  * Starts voice recognition
@@ -309,6 +336,12 @@ export function startVoiceRecognition({ onResult, onEnd, onError }: SpeechRecogn
   // Check for browser support
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     onError('Speech recognition not supported in this browser');
+    return;
+  }
+  
+  // Don't start recognition if Anki is speaking to prevent feedback loops
+  if (isSpeaking) {
+    onError('Anki is currently speaking. Please wait until she finishes.');
     return;
   }
   
@@ -324,6 +357,11 @@ export function startVoiceRecognition({ onResult, onEnd, onError }: SpeechRecogn
   
   // Set up callbacks
   recognitionInstance.onresult = (event: any) => {
+    // If Anki starts speaking while recognition is active, ignore the results
+    if (isSpeaking) {
+      return;
+    }
+    
     let interimTranscript = '';
     let finalTranscript = '';
     

@@ -58,27 +58,8 @@ export default function ChatInterface({
       recognition: support.speechRecognitionSupported
     });
     
-    // Set up voice recognition
-    if (support.speechRecognitionSupported) {
-      startVoiceRecognition({
-        onResult: (text) => {
-          setUserInput(text);
-          processInput(text);
-          setIsListening(false);
-        },
-        onEnd: () => {
-          setIsListening(false);
-        },
-        onError: (error) => {
-          console.log('Speech recognition error:', error);
-          setIsListening(false);
-          
-          if (error === 'no-speech') {
-            addAnkiMessage("I couldn't detect your voice. Please try again or type your message.");
-          }
-        }
-      });
-    }
+    // Note: We don't automatically start voice recognition on component mount anymore
+    // to prevent potential feedback loops
     
     return () => {
       if (timeoutRef.current) {
@@ -223,9 +204,14 @@ export default function ChatInterface({
       setIsListening(true);
       startVoiceRecognition({
         onResult: (text) => {
-          setUserInput(text);
-          processInput(text);
-          setIsListening(false);
+          if (text.trim()) {
+            setUserInput(text);
+            processInput(text);
+            
+            // Stop listening immediately after processing to prevent feedback loops
+            stopVoiceRecognition();
+            setIsListening(false);
+          }
         },
         onEnd: () => {
           setIsListening(false);
@@ -235,16 +221,19 @@ export default function ChatInterface({
           setIsListening(false);
           
           if (error === 'no-speech') {
-            addAnkiMessageWithVoice("I couldn't detect your voice. Please try again or type your message.");
+            // Use a text-only message instead of voice to prevent feedback loops
+            addAnkiMessage("I couldn't detect your voice. Please try again or type your message.");
+          } else if (error === 'Anki is currently speaking. Please wait until she finishes.') {
+            // Do nothing - this is normal when trying to speak while Anki is speaking
           }
         }
       });
       
-      // After 15 seconds of no results, time out
+      // After 8 seconds of no results, time out (reduced from 15 seconds)
       timeoutRef.current = window.setTimeout(() => {
         stopVoiceRecognition();
         setIsListening(false);
-      }, 15000);
+      }, 8000);
     }
   };
 
