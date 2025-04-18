@@ -60,11 +60,11 @@ export default function AutomatedRedistribution() {
     setIsLoading(true);
     try {
       // Get validation status
-      const validationResponse = await apiRequest('/api/redistribution/validate-keys');
+      const validationResponse = await apiRequest('/api/validate-keys');
       const validationData = await validationResponse.json();
       
       // Get balances
-      const balancesResponse = await apiRequest('/api/redistribution/balances');
+      const balancesResponse = await apiRequest('/api/balances');
       const balancesData = await balancesResponse.json();
       
       // Format data for display
@@ -118,7 +118,7 @@ export default function AutomatedRedistribution() {
   const fetchRedistributionStats = async () => {
     try {
       // Get redistribution history
-      const historyResponse = await apiRequest('/api/redistribution/history');
+      const historyResponse = await apiRequest('/api/history');
       const historyData = await historyResponse.json();
       
       // Get active field resonance events
@@ -151,8 +151,8 @@ export default function AutomatedRedistribution() {
   const toggleFieldMonitoring = async () => {
     try {
       const endpoint = fieldMonitoringActive 
-        ? '/api/redistribution/stop-field-monitoring'
-        : '/api/redistribution/start-field-monitoring';
+        ? '/api/stop-field-monitoring'
+        : '/api/start-field-monitoring';
         
       const response = await apiRequest(endpoint, {
         method: 'POST'
@@ -183,7 +183,7 @@ export default function AutomatedRedistribution() {
     setIsCreatingResonance(true);
     
     try {
-      const response = await apiRequest('/api/redistribution/field-resonance', {
+      const response = await apiRequest('/api/field-resonance', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
