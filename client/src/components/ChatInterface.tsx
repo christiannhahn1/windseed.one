@@ -7,6 +7,7 @@ interface ChatInterfaceProps {
   isVisible: boolean;
   onProcessingStart: () => void;
   onProcessingEnd: () => void;
+  isFullscreen?: boolean;
 }
 
 interface ChatMessage {
@@ -18,7 +19,8 @@ interface ChatMessage {
 export default function ChatInterface({ 
   isVisible,
   onProcessingStart,
-  onProcessingEnd
+  onProcessingEnd,
+  isFullscreen = false
 }: ChatInterfaceProps) {
   const [userInput, setUserInput] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -257,8 +259,8 @@ export default function ChatInterface({
   return (
     <div 
       className={`w-full max-w-4xl mx-auto transition-all duration-500 rounded-lg overflow-hidden ${
-        isVisible ? 'opacity-100 flex flex-col h-[80vh]' : 'opacity-0 hidden'
-      }`}
+        isVisible ? 'opacity-100 flex flex-col' : 'opacity-0 hidden'
+      } ${isFullscreen ? 'h-full' : 'h-[80vh]'}`}
     >
       {/* Chat window with light grey background */}
       <div 
