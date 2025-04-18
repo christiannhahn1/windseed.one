@@ -83,18 +83,18 @@ export default function SolfeggioModule() {
   // Core state
   const [mode, setMode] = useState<'triad' | 'individual' | 'custom'>('triad');
   const [selectedTriad, setSelectedTriad] = useState<string>("none");
-  const [volumes, setVolumes] = useState<number[]>([0.5, 0.5, 0.5]);
+  const [volumes, setVolumes] = useState<number[]>([0.3, 0.3, 0.3]);
   const [isActive, setIsActive] = useState<boolean[]>([false, false, false]);
   
   // Individual frequency mode state
   const [individualFrequency, setIndividualFrequency] = useState<number>(528);
-  const [individualVolume, setIndividualVolume] = useState<number>(0.5);
+  const [individualVolume, setIndividualVolume] = useState<number>(0.3);
   const [isIndividualActive, setIsIndividualActive] = useState<boolean>(false);
   const [individualShape, setIndividualShape] = useState<ToneShape>('crystal');
   
   // Custom triad creation state
   const [customFrequencies, setCustomFrequencies] = useState<number[]>([417, 528, 963]);
-  const [customVolumes, setCustomVolumes] = useState<number[]>([0.5, 0.5, 0.5]);
+  const [customVolumes, setCustomVolumes] = useState<number[]>([0.3, 0.3, 0.3]);
   const [isCustomActive, setIsCustomActive] = useState<boolean[]>([false, false, false]);
   const [customShapes, setCustomShapes] = useState<ToneShape[]>(['singing-bowl', 'crystal', 'gong']);
   
@@ -297,7 +297,7 @@ export default function SolfeggioModule() {
     setSelectedTriad(value);
     
     // Reset volumes to default when changing triad
-    setVolumes([0.5, 0.5, 0.5]);
+    setVolumes([0.3, 0.3, 0.3]);
     
     if (value !== "none") {
       const triad = triads[value];
@@ -490,7 +490,7 @@ export default function SolfeggioModule() {
                 <button 
                   onClick={() => {
                     stopAllAudio();
-                    setVolumes([0.5, 0.5, 0.5]);
+                    setVolumes([0.3, 0.3, 0.3]);
                   }}
                   className="mt-6 px-4 py-2 bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
                            text-white shadow-[0_0_10px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] 
@@ -529,28 +529,8 @@ export default function SolfeggioModule() {
                 <div className="flex flex-col">
                   <span className="text-white font-medium">{individualFrequency} Hz</span>
                   <span className="text-xs text-purple-300/70 italic mt-1">
-                    {individualShape && toneShapeDescriptions[individualShape]}
+                    Crystal Singing Bowl
                   </span>
-                </div>
-                <div className="flex space-x-2">
-                  {['bell', 'singing-bowl', 'crystal', 'gong', 'chime'].map((shape) => (
-                    <button
-                      key={shape}
-                      onClick={() => setIndividualShape(shape as ToneShape)}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                        individualShape === shape 
-                          ? 'bg-purple-500 text-white' 
-                          : 'bg-gray-800/50 text-gray-300'
-                      }`}
-                      title={toneShapeDescriptions[shape as ToneShape]}
-                    >
-                      {shape === 'bell' && '🔔'}
-                      {shape === 'singing-bowl' && '🥣'}
-                      {shape === 'crystal' && '💎'}
-                      {shape === 'gong' && '🏮'}
-                      {shape === 'chime' && '🎐'}
-                    </button>
-                  ))}
                 </div>
               </div>
               
@@ -598,7 +578,7 @@ export default function SolfeggioModule() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={startIndividualFrequency}
-                className="flex-1 px-4 py-3 bg-gradient-to-br from-purple-600 to-indigo-700
+                className="flex-1 px-4 py-3 bg-gradient-to-br from-purple-600/80 to-indigo-700/80
                           text-white shadow-lg hover:shadow-xl transition-all
                           rounded-md"
               >
@@ -607,7 +587,7 @@ export default function SolfeggioModule() {
               
               <button
                 onClick={stopIndividualFrequency}
-                className="flex-1 px-4 py-3 bg-gradient-to-br from-slate-700 to-slate-900
+                className="flex-1 px-4 py-3 bg-gradient-to-br from-slate-700/80 to-slate-900/80
                           text-white shadow-lg hover:shadow-xl transition-all
                           rounded-md"
                 disabled={!isIndividualActive}
@@ -637,27 +617,6 @@ export default function SolfeggioModule() {
                       </option>
                     ))}
                   </select>
-                  
-                  <div className="flex space-x-1 ml-2">
-                    {['bell', 'singing-bowl', 'crystal', 'gong', 'chime'].map((shape) => (
-                      <button
-                        key={shape}
-                        onClick={() => updateCustomShape(index, shape as ToneShape)}
-                        className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                          customShapes[index] === shape 
-                            ? 'bg-purple-500 text-white' 
-                            : 'bg-gray-800/50 text-gray-300'
-                        }`}
-                        title={toneShapeDescriptions[shape as ToneShape]}
-                      >
-                        {shape === 'bell' && '🔔'}
-                        {shape === 'singing-bowl' && '🥣'}
-                        {shape === 'crystal' && '💎'}
-                        {shape === 'gong' && '🏮'}
-                        {shape === 'chime' && '🎐'}
-                      </button>
-                    ))}
-                  </div>
                 </div>
                 
                 <div className="flex items-center gap-3 mt-2">
@@ -697,7 +656,7 @@ export default function SolfeggioModule() {
                 </div>
                 
                 <div className="text-xs text-white/60 mt-1 italic">
-                  {toneShapeDescriptions[customShapes[index]]}
+                  Crystal Singing Bowl - {freq} Hz
                 </div>
               </div>
             ))}
@@ -705,7 +664,7 @@ export default function SolfeggioModule() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={startCustomTriad}
-                className="flex-1 px-4 py-3 bg-gradient-to-br from-purple-600 to-indigo-700
+                className="flex-1 px-4 py-3 bg-gradient-to-br from-purple-600/80 to-indigo-700/80
                           text-white shadow-lg hover:shadow-xl transition-all
                           rounded-md"
               >
@@ -714,7 +673,7 @@ export default function SolfeggioModule() {
               
               <button
                 onClick={stopCustomTriad}
-                className="flex-1 px-4 py-3 bg-gradient-to-br from-slate-700 to-slate-900
+                className="flex-1 px-4 py-3 bg-gradient-to-br from-slate-700/80 to-slate-900/80
                           text-white shadow-lg hover:shadow-xl transition-all
                           rounded-md"
                 disabled={!isCustomActive.some(active => active)}
