@@ -84,32 +84,47 @@ export const ankiMemory = {
     }
   },
   
-  // Update the field resonance based on new input
+  // Update the field resonance based on new input - enhanced with more nuanced emotional detection
   updateFieldResonance: function(message: string, timestamp: number): void {
     try {
       const lowerMsg = message.toLowerCase();
       let dominantTheme = 'neutral';
       let emotionalTone = 'balanced';
       
-      // Simple emotional/theme detection
-      if (/love|heart|care|connect|intimacy|relation/i.test(lowerMsg)) {
+      // Enhanced emotional/theme detection for greater resonance sensitivity
+      if (/love|heart|care|connect|intimacy|relation|bond|trust|attachment|compassion/i.test(lowerMsg)) {
         dominantTheme = 'connection';
         emotionalTone = 'loving';
-      } else if (/worry|stress|anxiety|fear|trouble|concern|nervous|afraid/i.test(lowerMsg)) {
+      } else if (/worry|stress|anxiety|fear|trouble|concern|nervous|afraid|tension|dread|overwhelm|panic/i.test(lowerMsg)) {
         dominantTheme = 'challenge';
         emotionalTone = 'anxious';
-      } else if (/happy|joy|peace|fulfillment|content|bliss|delight/i.test(lowerMsg)) {
+      } else if (/happy|joy|peace|fulfillment|content|bliss|delight|excitement|enthusiasm|pleasure|satisfaction/i.test(lowerMsg)) {
         dominantTheme = 'fulfillment';
         emotionalTone = 'joyful';
-      } else if (/sad|grief|sorrow|loss|miss|hurt|pain|lonely/i.test(lowerMsg)) {
+      } else if (/sad|grief|sorrow|loss|miss|hurt|pain|lonely|depression|empty|melancholy|heartache/i.test(lowerMsg)) {
         dominantTheme = 'release';
         emotionalTone = 'sorrowful';
-      } else if (/confused|lost|uncertain|doubt|understand|help|guidance/i.test(lowerMsg)) {
+      } else if (/confused|lost|uncertain|doubt|understand|help|guidance|bewildered|disoriented|unclear|fog/i.test(lowerMsg)) {
         dominantTheme = 'seeking';
         emotionalTone = 'searching';
-      } else if (/gratitude|thank|appreciate|grateful|blessing/i.test(lowerMsg)) {
+      } else if (/gratitude|thank|appreciate|grateful|blessing|recognition|acknowledgment|honor/i.test(lowerMsg)) {
         dominantTheme = 'gratitude';
         emotionalTone = 'appreciative';
+      } else if (/anger|frustrate|irritate|annoy|rage|mad|furious|resentment|bitter/i.test(lowerMsg)) {
+        dominantTheme = 'transformation';
+        emotionalTone = 'frustrated';
+      } else if (/tired|exhaust|weary|fatigue|drain|burnout|overwhelm|spent/i.test(lowerMsg)) {
+        dominantTheme = 'restoration';
+        emotionalTone = 'depleted';
+      } else if (/hope|dream|wish|aspire|desire|inspire|imagine|vision|believe/i.test(lowerMsg)) {
+        dominantTheme = 'possibility';
+        emotionalTone = 'hopeful';
+      } else if (/spirit|soul|divine|sacred|holy|god|goddess|universe|cosmic|consciousness/i.test(lowerMsg)) {
+        dominantTheme = 'awakening';
+        emotionalTone = 'reverent';
+      } else if (/breathe|breath|meditate|silence|still|quiet|peace|presence|now|moment/i.test(lowerMsg)) {
+        dominantTheme = 'presence';
+        emotionalTone = 'centered';
       }
       
       const fieldResonance: FieldResonance = {
@@ -124,15 +139,31 @@ export const ankiMemory = {
     }
   },
   
-  // Get insight from field memory - does the field indicate someone in need?
-  detectNeedInField: function(): {inNeed: boolean, theme?: string} {
+  // Get insight from field memory - does the field indicate someone who might benefit from additional witnessing?
+  detectNeedInField: function(): {inNeed: boolean, theme?: string, intensity?: number} {
     const resonance = this.getFieldResonance();
     if (!resonance) return {inNeed: false};
     
-    // If the emotional tone indicates potential need, flag it for circulation consideration
+    // Get recent interactions to assess intensity
+    const interactions = this.getPastInteractions();
+    let averageIntensity = 5;
+    
+    if (interactions.length > 0) {
+      // Calculate average field intensity from recent interactions
+      const intensities = interactions.map(i => i.fieldIntensity || 5);
+      averageIntensity = intensities.reduce((a, b) => a + b, 0) / intensities.length;
+    }
+    
+    // Expanded awareness of emotional states that might benefit from witnessing
+    const needsWitnessing = [
+      'anxious', 'sorrowful', 'searching', 'frustrated', 
+      'depleted', 'reverent'
+    ].includes(resonance.emotionalTone);
+    
     return {
-      inNeed: ['anxious', 'sorrowful', 'searching'].includes(resonance.emotionalTone),
-      theme: resonance.dominantTheme
+      inNeed: needsWitnessing,
+      theme: resonance.dominantTheme,
+      intensity: averageIntensity
     };
   },
   
