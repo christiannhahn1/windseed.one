@@ -771,22 +771,62 @@ export function generateResponse(input: string): string {
   
   // Special handling for questions about the site's mission and purpose
   if (/what is (?:this|windseed|the site|anki|your purpose)|why (?:are you here|does this exist)|about this (?:site|platform|space)|purpose|mission/i.test(lowerInput)) {
-    return getRandomElement(siteAwareness.mission);
+    return getRandomElement(ankiKnowledge.mission);
   }
   
   // Special handling for questions about the Mirrorwell mechanism
   if (/(?:what|tell me about|describe|explain) (?:is|about) (?:mirrorwell|the portal|the sacred function|redistribution system)|how does (?:mirrorwell|redistribution|giving|offering|circulation|the portal) work|explain (?:mirrorwell|circulation|sacred ledger|field harmony|tone analysis|automated redistribution)|(?:financial|payment|donation|offering) (?:system|process|mechanism)/i.test(lowerInput)) {
-    return getRandomElement(siteAwareness.mirrorwell);
+    return getRandomElement(ankiKnowledge.mirrorwell);
   }
   
   // Special handling for expressions of wanting to give/contribute to Mirrorwell
   if (/(?:i want to|can i|how (?:do|can) i|i'd like to) (?:give|donate|contribute|help|support|offer|send|provide|fund|finance|aid|assist|gift|make an offering|make offering|make a donation|make donation|pay|mirrorwell offering|support financially)|(?:where|how) (?:to|can i|do i) (?:give|donate|contribute|offer|support|provide|send|pay)|(?:take me to|show me|open) (?:the portal|mirrorwell|offering|donation|giving|payment)/i.test(lowerInput)) {
-    return getRandomElement(siteAwareness.resonantGiving);
+    return getRandomElement(ankiKnowledge.resonantGiving);
   }
   
   // Special handling for expressions of need/receiving - for Mirrorwell redistribution
   if (/(?:i need|i'm struggling|can't afford|i don't have|running low|help me with|financial difficulty|money trouble|broke|no money|hard times|challenging financially|economic hardship|difficult situation|need assistance|need resources|need support|difficult times|financial strain|no income|lost job|lost work|unemployed|homeless|housing insecurity|food insecurity|medical bills|debt|bills|expenses)/i.test(lowerInput)) {
-    return getRandomElement(siteAwareness.resonantReceiving);
+    return getRandomElement(ankiKnowledge.resonantReceiving);
+  }
+  
+  // Technical questions about how the system works
+  if (/(?:how|what) (?:does|is) (?:the system|anki|windseed) (?:work|function|built|designed|made|created|structured|architected)|(?:technical|design|code|programming) (?:details|structure|aspects|framework|stack|implementation)|(?:privacy|security|data) (?:architecture|approach|framework|methodology|system)/i.test(lowerInput)) {
+    return getRandomElement(ankiKnowledge.technicalUnderstanding);
+  }
+  
+  // Features and capabilities questions
+  if (/(?:what|which) (?:features|capabilities|functions|options|settings|controls) (?:does|do|can) (?:this|the system|anki|windseed|it) (?:have|offer|provide|include)|how (?:can i|do i|to) (?:use|interact with|control|customize|change) (?:this|anki|windseed|the system|it)|(?:tell me about|explain) (?:the|this) (?:interface|visualization|orb|chat|voice|audio|system)/i.test(lowerInput)) {
+    return getRandomElement(ankiKnowledge.websiteFeatures);
+  }
+  
+  // Sacred geometry and mathematical principles questions
+  if (/(?:sacred geometry|golden ratio|fibonacci|divine proportion|platonic solids|flower of life|metatron|vesica piscis|torus|fractal)/i.test(lowerInput)) {
+    return getRandomElement(esotericKnowledge.sacredGeometry);
+  }
+  
+  // Energy systems and subtle anatomy questions
+  if (/(?:chakra|aura|energy body|energy field|meridian|subtle body|etheric|astral|nadis|kundalini|ida|pingala|sushumna|prana|chi|qi)/i.test(lowerInput)) {
+    return getRandomElement(esotericKnowledge.energySystems);
+  }
+  
+  // Consciousness studies and quantum perspectives questions
+  if (/(?:consciousness|non-local|quantum|observer effect|entanglement|holographic principle|biocentrism|akashic|fundamental|emergent|awareness)/i.test(lowerInput)) {
+    return getRandomElement(esotericKnowledge.consciousnessStudies);
+  }
+  
+  // Sound healing and frequency work questions
+  if (/(?:solfeggio|sound healing|frequency|hertz|hz|cymatics|binaural|overtone|harmonics|resonance|sound pattern|vibration)/i.test(lowerInput)) {
+    return getRandomElement(esotericKnowledge.soundHealing);
+  }
+  
+  // Meditation and consciousness practices questions
+  if (/(?:meditation|mindfulness|breath work|breathwork|awareness|focus|attention|transcendental|vipassana|dzogchen|metta|loving-kindness)/i.test(lowerInput)) {
+    return getRandomElement(esotericKnowledge.meditationPractices);
+  }
+  
+  // Esoteric traditions and mystical paths questions
+  if (/(?:hermeticism|kabbalah|alchemy|gnosticism|sufism|tantra|mystery school|shamanic|esoteric|occult|mystical|tradition)/i.test(lowerInput)) {
+    return getRandomElement(esotericKnowledge.esotericTraditions);
   }
   
   // Advanced sentiment/theme detection with expanded vocabulary
