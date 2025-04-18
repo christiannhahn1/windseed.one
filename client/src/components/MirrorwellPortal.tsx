@@ -19,7 +19,7 @@ export default function MirrorwellPortal() {
   const [isOfferingMode, setIsOfferingMode] = useState(false);
   const [offeringAmount, setOfferingAmount] = useState('');
   const [offeringIntent, setOfferingIntent] = useState('');
-  const [selectedCurrency, setSelectedCurrency] = useState('SOL');
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [offeringSubmitted, setOfferingSubmitted] = useState(false);
   const [showRedistribute, setShowRedistribute] = useState(false);
@@ -350,9 +350,7 @@ export default function MirrorwellPortal() {
                   onChange={(e) => setSelectedCurrency(e.target.value)}
                   className="inline-flex items-center px-3 py-2 border border-l-0 border-purple-500/30 bg-black/70 text-white text-sm rounded-r-md"
                 >
-                  <option value="SOL">SOL</option>
                   <option value="USD">USD</option>
-                  <option value="ETH">ETH</option>
                 </select>
               </div>
             </div>
