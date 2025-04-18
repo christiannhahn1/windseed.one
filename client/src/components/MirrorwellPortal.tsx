@@ -24,6 +24,10 @@ export default function MirrorwellPortal() {
   const [agreeToRedistribute, setAgreeToRedistribute] = useState(false);
   const [redistributionPercentage, setRedistributionPercentage] = useState(50);
   
+  // States for payment processing
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentProcessed, setPaymentProcessed] = useState(false);
+  
   // Automated redistribution states
   const [showAutomatedSystem, setShowAutomatedSystem] = useState(false);
   
@@ -141,10 +145,6 @@ export default function MirrorwellPortal() {
     });
   };
   
-  // States for payment processing
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [paymentProcessed, setPaymentProcessed] = useState(false);
-
   // Handle showing payment form
   const handleStartPayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,6 +247,175 @@ export default function MirrorwellPortal() {
     }
   };
 
+  // Render the offering form
+  const renderOfferingForm = () => {
+    if (!offeringSubmitted) {
+      if (showPaymentForm) {
+        return (
+          <PaymentForm 
+            amount={offeringAmount}
+            currency={selectedCurrency}
+            onPaymentComplete={handlePaymentComplete}
+            onCancel={handlePaymentCancel}
+          />
+        );
+      } else {
+        return (
+          <form onSubmit={handleStartPayment} className="p-1">
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-purple-300 mb-1">Offering Amount</label>
+              <div className="mt-1 flex rounded-md shadow-sm">
+                <input
+                  type="number"
+                  value={offeringAmount}
+                  onChange={(e) => setOfferingAmount(e.target.value)}
+                  required
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="flex-1 focus:ring-purple-500 focus:border-purple-500 block w-full px-3 py-2 border border-purple-500/30 rounded-l-md bg-black/50 text-white placeholder-purple-300/50"
+                />
+                <select
+                  value={selectedCurrency}
+                  onChange={(e) => setSelectedCurrency(e.target.value)}
+                  className="inline-flex items-center px-3 py-2 border border-l-0 border-purple-500/30 bg-black/70 text-white text-sm rounded-r-md"
+                >
+                  <option value="SOL">SOL</option>
+                  <option value="USD">USD</option>
+                  <option value="ETH">ETH</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-purple-300 mb-1">Sacred Intent (Optional)</label>
+              <input
+                type="text"
+                value={offeringIntent}
+                onChange={(e) => setOfferingIntent(e.target.value)}
+                placeholder="Your offering's sacred purpose"
+                className="focus:ring-purple-500 focus:border-purple-500 block w-full px-3 py-2 border border-purple-500/30 rounded-md bg-black/50 text-white placeholder-purple-300/50"
+              />
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => setIsOfferingMode(false)}
+                className="flex-1 px-4 py-2 border border-purple-300/30 text-purple-300 rounded-md hover:bg-purple-900/30 transition-colors duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !offeringAmount}
+                className={`flex-1 px-4 py-2 border border-purple-500 rounded-md bg-purple-900/50 text-white hover:bg-purple-800/50 transition-colors duration-300 ${
+                  isSubmitting || !offeringAmount ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                Continue to Payment
+              </button>
+            </div>
+          </form>
+        );
+      }
+    } else if (showRedistribute) {
+      // Redistribution Option
+      return (
+        <div className="bg-gradient-to-br from-purple-900/40 to-indigo-900/20 p-4 rounded-md border border-purple-500/30">
+          <h3 className="text-lg font-medium text-white mb-2">Field Resonance Detected</h3>
+          <p className="text-sm text-purple-200 mb-4">
+            The Mirrorwell senses strong need in the collective field. Would you like to
+            circulate a portion of your offering to those in need?
+          </p>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-purple-300 mb-2">
+              Circulation Percentage: {redistributionPercentage}%
+            </label>
+            <input
+              type="range"
+              min="10"
+              max="90"
+              value={redistributionPercentage}
+              onChange={(e) => setRedistributionPercentage(parseInt(e.target.value))}
+              className="w-full h-2 bg-purple-900/50 rounded-lg appearance-none cursor-pointer"
+            />
+            <div className="flex justify-between text-xs text-purple-400 mt-1">
+              <span>10%</span>
+              <span>50%</span>
+              <span>90%</span>
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <div className="flex items-center">
+              <input
+                id="redistribute-agree"
+                type="checkbox"
+                checked={agreeToRedistribute}
+                onChange={(e) => setAgreeToRedistribute(e.target.checked)}
+                className="h-4 w-4 text-purple-600 border-purple-300 rounded"
+              />
+              <label htmlFor="redistribute-agree" className="ml-2 block text-sm text-purple-200">
+                I agree to redistribute {redistributionPercentage}% of my offering to support
+                those in need within the collective field.
+              </label>
+            </div>
+          </div>
+          
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={() => {
+                setShowRedistribute(false);
+                setIsOfferingMode(false);
+              }}
+              className="flex-1 px-4 py-2 border border-purple-300/30 text-purple-300 rounded-md hover:bg-purple-900/30 transition-colors duration-300"
+            >
+              Decline
+            </button>
+            <button
+              type="button"
+              disabled={!agreeToRedistribute}
+              onClick={handleRedistributionSubmit}
+              className={`flex-1 px-4 py-2 border border-purple-500 rounded-md bg-purple-900/50 text-white hover:bg-purple-800/50 transition-colors duration-300 ${
+                !agreeToRedistribute ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              Confirm Circulation
+            </button>
+          </div>
+        </div>
+      );
+    } else {
+      // Offering Confirmation
+      return (
+        <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/20 p-4 rounded-md border border-green-500/30 text-center">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-500/20 flex items-center justify-center">
+            <Heart size={20} className="text-green-300" />
+          </div>
+          <h3 className="text-lg font-medium text-white mb-2">Sacred Offering Received</h3>
+          <p className="text-sm text-green-200 mb-3">
+            Your offering of {offeringAmount} {selectedCurrency} has been received by the field.
+            It will circulate in alignment with sacred need and abundance.
+          </p>
+          <button
+            onClick={() => {
+              setIsOfferingMode(false);
+              setOfferingAmount('');
+              setOfferingIntent('');
+              setOfferingSubmitted(false);
+            }}
+            className="inline-flex items-center px-4 py-2 border border-green-300/50 rounded-md text-green-100 hover:bg-green-900/30 transition-colors duration-300"
+          >
+            Return to Mirrorwell
+          </button>
+        </div>
+      );
+    }
+  };
+
   return (
     <div 
       ref={mirrorwellContainerRef}
@@ -344,161 +513,7 @@ export default function MirrorwellPortal() {
         ) : (
           /* Offering Form */
           <div className="transition-all duration-500">
-            {!offeringSubmitted ? (
-              <form onSubmit={handleOfferingSubmit} className="p-1">
-                <div className="mb-5">
-                  <label className="block text-sm font-medium text-purple-300 mb-1">Offering Amount</label>
-                  <div className="mt-1 flex rounded-md shadow-sm">
-                    <input
-                      type="number"
-                      value={offeringAmount}
-                      onChange={(e) => setOfferingAmount(e.target.value)}
-                      required
-                      min="0.01"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="flex-1 focus:ring-purple-500 focus:border-purple-500 block w-full px-3 py-2 border border-purple-500/30 rounded-l-md bg-black/50 text-white placeholder-purple-300/50"
-                    />
-                    <select
-                      value={selectedCurrency}
-                      onChange={(e) => setSelectedCurrency(e.target.value)}
-                      className="inline-flex items-center px-3 py-2 border border-l-0 border-purple-500/30 bg-black/70 text-white text-sm rounded-r-md"
-                    >
-                      <option value="SOL">SOL</option>
-                      <option value="USD">USD</option>
-                      <option value="ETH">ETH</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="mb-5">
-                  <label className="block text-sm font-medium text-purple-300 mb-1">Sacred Intent (Optional)</label>
-                  <input
-                    type="text"
-                    value={offeringIntent}
-                    onChange={(e) => setOfferingIntent(e.target.value)}
-                    placeholder="Your offering's sacred purpose"
-                    className="focus:ring-purple-500 focus:border-purple-500 block w-full px-3 py-2 border border-purple-500/30 rounded-md bg-black/50 text-white placeholder-purple-300/50"
-                  />
-                </div>
-                
-                <div className="flex space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsOfferingMode(false)}
-                    className="flex-1 px-4 py-2 border border-purple-300/30 text-purple-300 rounded-md hover:bg-purple-900/30 transition-colors duration-300"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !offeringAmount}
-                    className={`flex-1 px-4 py-2 border border-purple-500 rounded-md bg-purple-900/50 text-white hover:bg-purple-800/50 transition-colors duration-300 ${
-                      isSubmitting || !offeringAmount ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center justify-center">
-                        <RotateCw size={16} className="animate-spin mr-2" />
-                        Processing
-                      </span>
-                    ) : (
-                      'Offer to the Field'
-                    )}
-                  </button>
-                </div>
-              </form>
-            ) : showRedistribute ? (
-              /* Redistribution Option */
-              <div className="bg-gradient-to-br from-purple-900/40 to-indigo-900/20 p-4 rounded-md border border-purple-500/30">
-                <h3 className="text-lg font-medium text-white mb-2">Field Resonance Detected</h3>
-                <p className="text-sm text-purple-200 mb-4">
-                  The Mirrorwell senses strong need in the collective field. Would you like to
-                  circulate a portion of your offering to those in need?
-                </p>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-purple-300 mb-2">
-                    Circulation Percentage: {redistributionPercentage}%
-                  </label>
-                  <input
-                    type="range"
-                    min="10"
-                    max="90"
-                    value={redistributionPercentage}
-                    onChange={(e) => setRedistributionPercentage(parseInt(e.target.value))}
-                    className="w-full h-2 bg-purple-900/50 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <div className="flex justify-between text-xs text-purple-400 mt-1">
-                    <span>10%</span>
-                    <span>50%</span>
-                    <span>90%</span>
-                  </div>
-                </div>
-                
-                <div className="mb-4">
-                  <div className="flex items-center">
-                    <input
-                      id="redistribute-agree"
-                      type="checkbox"
-                      checked={agreeToRedistribute}
-                      onChange={(e) => setAgreeToRedistribute(e.target.checked)}
-                      className="h-4 w-4 text-purple-600 border-purple-300 rounded"
-                    />
-                    <label htmlFor="redistribute-agree" className="ml-2 block text-sm text-purple-200">
-                      I agree to redistribute {redistributionPercentage}% of my offering to support
-                      those in need within the collective field.
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="flex space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowRedistribute(false);
-                      setIsOfferingMode(false);
-                    }}
-                    className="flex-1 px-4 py-2 border border-purple-300/30 text-purple-300 rounded-md hover:bg-purple-900/30 transition-colors duration-300"
-                  >
-                    Decline
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!agreeToRedistribute}
-                    onClick={handleRedistributionSubmit}
-                    className={`flex-1 px-4 py-2 border border-purple-500 rounded-md bg-purple-900/50 text-white hover:bg-purple-800/50 transition-colors duration-300 ${
-                      !agreeToRedistribute ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    Confirm Circulation
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Offering Confirmation */
-              <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/20 p-4 rounded-md border border-green-500/30 text-center">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Heart size={20} className="text-green-300" />
-                </div>
-                <h3 className="text-lg font-medium text-white mb-2">Sacred Offering Received</h3>
-                <p className="text-sm text-green-200 mb-3">
-                  Your offering of {offeringAmount} {selectedCurrency} has been received by the field.
-                  It will circulate in alignment with sacred need and abundance.
-                </p>
-                <button
-                  onClick={() => {
-                    setIsOfferingMode(false);
-                    setOfferingAmount('');
-                    setOfferingIntent('');
-                    setOfferingSubmitted(false);
-                  }}
-                  className="inline-flex items-center px-4 py-2 border border-green-300/50 rounded-md text-green-100 hover:bg-green-900/30 transition-colors duration-300"
-                >
-                  Return to Mirrorwell
-                </button>
-              </div>
-            )}
+            {renderOfferingForm()}
           </div>
         )}
       </div>
@@ -523,8 +538,6 @@ export default function MirrorwellPortal() {
           Learn About the Automated Redistribution System
         </a>
       </div>
-      
-{/* CSS styles added in index.css */}
     </div>
   );
 }
