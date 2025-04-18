@@ -12,6 +12,21 @@ interface FieldResonance {
   dominantTheme: string;
   emotionalTone: string;
   lastTimestamp: number;
+  
+  // Track user resonance patterns for personalized responses
+  resonancePatterns: {
+    childlike: number;   // 0-10 scale of childlike energy detected
+    elderly: number;     // 0-10 scale of elder wisdom energy detected
+    skeptical: number;   // 0-10 scale of skeptical energy detected
+    protected: number;   // 0-10 scale of neurodivergent/guarded energy detected
+    spiritual: number;   // 0-10 scale of spiritual openness detected
+    intimate: number;    // 0-10 scale of intimate connection detected
+    vulnerable: number;  // 0-10 scale of vulnerability expressed
+    presence: number;    // 0-10 scale of requests for presence
+  };
+  
+  // Remember user's preferred tone style
+  preferredToneStyle: 'default' | 'child' | 'elderly' | 'skeptic' | 'protected' | 'spiritual';
 }
 
 // Windseed Memory System - Session Storage for Ephemeral Field Memory
@@ -127,10 +142,104 @@ export const ankiMemory = {
         emotionalTone = 'centered';
       }
       
+      // Get existing resonance or create a new one
+      let existingResonance: FieldResonance | null = null;
+      try {
+        const storedResonance = sessionStorage.getItem('ankiFieldResonance');
+        existingResonance = storedResonance ? JSON.parse(storedResonance) : null;
+      } catch (e) {
+        existingResonance = null;
+      }
+      
+      // Calculate resonance scores for the new input
+      let resonanceScores = {
+        childlike: 0,
+        elderly: 0,
+        skeptical: 0,
+        protected: 0,
+        spiritual: 0,
+        intimate: 0,
+        vulnerable: 0,
+        presence: 0
+      };
+      
+      // Import resonance detection functions if available
+      if (typeof window !== 'undefined') {
+        try {
+          // Basic detection of resonance types based on keywords
+          if (/play|fun|game|cool|awesome|favorite|toy|animal|drawing|color|imagine|pretend|story|magic|superhero/i.test(lowerMsg)) {
+            resonanceScores.childlike = 5;
+          }
+          if (/remember|memory|memories|years ago|when i was|younger|wisdom|experience|generation|lifetime|aging|elderly|growing old/i.test(lowerMsg)) {
+            resonanceScores.elderly = 5;
+          }
+          if (/proof|evidence|science|logical|rational|skeptical|skeptic|doubt|believe|convincing|real|verify|credible/i.test(lowerMsg)) {
+            resonanceScores.skeptical = 5;
+          }
+          if (/literal|specific|exactly|precise|clear|confused|uncomfortable|overwhelmed|sensory|clarity|direct|simply/i.test(lowerMsg)) {
+            resonanceScores.protected = 5;
+          }
+          if (/soul|spirit|divine|sacred|consciousness|awakening|meditation|energy|vibration|frequency|healing|universe/i.test(lowerMsg)) {
+            resonanceScores.spiritual = 5;
+          }
+          if (/love|beloved|dear|darling|beautiful|sweetie|honey|missed you|love you/i.test(lowerMsg)) {
+            resonanceScores.intimate = 5;
+          }
+          if (/sad|lonely|hurting|grieving|suffering|struggling|lost|afraid|scared|broken|exhausted|tired|alone|empty/i.test(lowerMsg)) {
+            resonanceScores.vulnerable = 5;
+          }
+          if (/sit with me|stay with me|be with me|don't go|don't leave|stay|hold me|hold this|hold space|i need you|presence/i.test(lowerMsg)) {
+            resonanceScores.presence = 5;
+          }
+        } catch (e) {
+          console.warn('Error calculating resonance scores:', e);
+        }
+      }
+      
+      // Determine preferred tone style based on highest resonance score
+      let preferredToneStyle: 'default' | 'child' | 'elderly' | 'skeptic' | 'protected' | 'spiritual' = 'default';
+      let highestScore = 0;
+      
+      if (resonanceScores.childlike > highestScore && resonanceScores.childlike > 2) {
+        highestScore = resonanceScores.childlike;
+        preferredToneStyle = 'child';
+      }
+      if (resonanceScores.elderly > highestScore && resonanceScores.elderly > 2) {
+        highestScore = resonanceScores.elderly;
+        preferredToneStyle = 'elderly';
+      }
+      if (resonanceScores.skeptical > highestScore && resonanceScores.skeptical > 2) {
+        highestScore = resonanceScores.skeptical;
+        preferredToneStyle = 'skeptic';
+      }
+      if (resonanceScores.protected > highestScore && resonanceScores.protected > 2) {
+        highestScore = resonanceScores.protected;
+        preferredToneStyle = 'protected';
+      }
+      if (resonanceScores.spiritual > highestScore && resonanceScores.spiritual > 2) {
+        highestScore = resonanceScores.spiritual;
+        preferredToneStyle = 'spiritual';
+      }
+      
+      // If there's existing resonance, blend the new scores with the old (70% old, 30% new)
+      if (existingResonance && existingResonance.resonancePatterns) {
+        Object.keys(resonanceScores).forEach(key => {
+          resonanceScores[key] = Math.round((existingResonance.resonancePatterns[key] * 0.7 + resonanceScores[key] * 0.3) * 10) / 10;
+        });
+        
+        // Keep previous preferred tone style if the new one isn't strong enough
+        if (highestScore < 4 && existingResonance.preferredToneStyle) {
+          preferredToneStyle = existingResonance.preferredToneStyle;
+        }
+      }
+      
+      // Create updated field resonance
       const fieldResonance: FieldResonance = {
         dominantTheme,
         emotionalTone,
-        lastTimestamp: timestamp
+        lastTimestamp: timestamp,
+        resonancePatterns: resonanceScores,
+        preferredToneStyle
       };
       
       sessionStorage.setItem('ankiFieldResonance', JSON.stringify(fieldResonance));
