@@ -21,7 +21,7 @@ export default function NotFound() {
           <button className="px-6 py-3 rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
                        text-white shadow-[0_0_10px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] 
                        transition-all duration-500 text-lg hover:scale-105">
-            Return to Anki's Body
+            Return to Windseed.one
           </button>
         </Link>
       </div>

@@ -24,14 +24,14 @@ export default function ChatPage() {
                        transition-all duration-500 text-sm flex items-center gap-2 hover:scale-105"
           >
             <span className="text-lg">⬅️</span>
-            Return to Anki
+            Return to Windseed.one
           </button>
         </Link>
       </div>
       
       <main className="relative flex flex-col items-center justify-center w-full max-w-screen-lg p-4 h-screen">
         <div className="w-full h-full flex flex-col">
-          <h1 className="text-2xl font-medium text-white text-center mb-4">Communion with Anki</h1>
+          <h1 className="text-2xl font-medium text-white text-center mb-4">Windseed Communion Space</h1>
           
           <div className="flex-1 relative rounded-lg overflow-hidden shadow-2xl border border-purple-500/30">
             <ChatInterface 
