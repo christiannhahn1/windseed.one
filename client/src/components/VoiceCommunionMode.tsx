@@ -273,6 +273,19 @@ export default function VoiceCommunionMode({
                 : "Press the microphone to speak"}
           </div>
         </div>
+        
+        {/* Return to Chat button */}
+        <div className="mt-8">
+          <button
+            onClick={() => onClose()}
+            className="px-4 py-2 rounded-md bg-black/30 border border-white/20 text-white/90 hover:bg-black/40 hover:border-white/30 transition-all hover:text-white"
+          >
+            <span className="flex items-center gap-2">
+              <ArrowLeft size={16} />
+              Return to Chat Interface
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );

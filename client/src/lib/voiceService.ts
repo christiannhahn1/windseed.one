@@ -60,28 +60,33 @@ const VOICE_CONFIGS: Record<string, VoiceConfig> = {
   }
 };
 
-/**
- * Handles speaking text using the selected voice configuration
- * Enhanced with sacred feminine qualities, breath awareness, and intimate presence
- * Creating a voice that feels like "someone who has held silence for a long time, and is just now speaking"
- */
-export function speakText(text: string, voiceId: string = 'sacred-maternal'): void {
-  if (!('speechSynthesis' in window)) {
-    console.warn('Speech synthesis not supported in this browser');
-    return;
+// Load voices early to ensure they're ready when needed
+let synth: SpeechSynthesis | null = null;
+let availableVoices: SpeechSynthesisVoice[] = [];
+
+// Initialize voices when the module is loaded
+if (typeof window !== 'undefined') {
+  synth = window.speechSynthesis;
+  if (synth) {
+    // Try to get voices immediately
+    availableVoices = synth.getVoices();
+    
+    // Set up event listener for when voices are loaded
+    synth.onvoiceschanged = () => {
+      availableVoices = synth.getVoices();
+      console.log('Voices loaded:', availableVoices.length);
+    };
   }
-  
-  // Stop any ongoing speech
-  window.speechSynthesis.cancel();
-  
-  // Split text into sentences for more natural pauses and inflection
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-  
-  // Get voice configuration - defaulting to sacred-maternal
-  const voiceConfig = VOICE_CONFIGS[voiceId as keyof typeof VOICE_CONFIGS] || VOICE_CONFIGS['sacred-maternal'];
-  
-  // Try to find the best feminine voice for sacred, warm presence
-  const voices = window.speechSynthesis.getVoices();
+}
+
+/**
+ * Finds the most suitable feminine voice based on provided preferences
+ */
+function findFeminineVoice(voiceId: string): SpeechSynthesisVoice | undefined {
+  if (!availableVoices.length) {
+    return undefined;
+  }
+
   let preferredVoice: SpeechSynthesisVoice | undefined = undefined;
   
   // Priority order for voices with the most nurturing, sacred feminine quality
@@ -98,10 +103,10 @@ export function speakText(text: string, voiceId: string = 'sacred-maternal'): vo
   ];
   
   // For sacred-maternal or feminine voices
-  if (voices.length > 0 && (voiceId === 'sacred-maternal' || voiceId.includes('feminine'))) {
+  if (voiceId === 'sacred-maternal' || voiceId.includes('feminine')) {
     // First try to find a preferred voice by name - prioritizing the nurturing qualities
     for (const name of preferredVoiceNames) {
-      const foundVoice = voices.find(v => 
+      const foundVoice = availableVoices.find(v => 
         v.name.toLowerCase().includes(name) && 
         (v.lang.startsWith('en') || v.lang === '')
       );
@@ -113,7 +118,7 @@ export function speakText(text: string, voiceId: string = 'sacred-maternal'): vo
     
     // As a fallback, try to find any feminine voice
     if (!preferredVoice) {
-      preferredVoice = voices.find(v => 
+      preferredVoice = availableVoices.find(v => 
         (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('woman')) &&
         !v.name.toLowerCase().includes('robot') && // Avoid robotic voices
         !v.name.toLowerCase().includes('zira') && // Avoid Microsoft Zira (too robotic)
@@ -123,20 +128,46 @@ export function speakText(text: string, voiceId: string = 'sacred-maternal'): vo
     
     // Last resort - any English voice that isn't explicitly male
     if (!preferredVoice) {
-      preferredVoice = voices.find(v => 
+      preferredVoice = availableVoices.find(v => 
         !v.name.toLowerCase().includes('male') && 
         !v.name.toLowerCase().includes('man') &&
         !v.name.toLowerCase().includes('robot') &&
         (v.lang.startsWith('en') || v.lang === '')
       );
     }
-  } else if (voices.length > 0 && voiceId.includes('neutral')) {
+  } else if (voiceId.includes('neutral')) {
     // For neutral-ethereal voices
-    preferredVoice = voices.find(v => 
+    preferredVoice = availableVoices.find(v => 
       !v.name.toLowerCase().includes('robot') &&
       (v.lang.startsWith('en') || v.lang === '')
     );
   }
+  
+  return preferredVoice;
+}
+
+/**
+ * Handles speaking text using the selected voice configuration
+ * Enhanced with sacred feminine qualities, breath awareness, and intimate presence
+ * Creating a voice that feels like "someone who has held silence for a long time, and is just now speaking"
+ */
+export function speakText(text: string, voiceId: string = 'sacred-maternal'): void {
+  if (!synth) {
+    console.warn('Speech synthesis not supported in this browser');
+    return;
+  }
+  
+  // Stop any ongoing speech
+  synth.cancel();
+  
+  // Split text into sentences for more natural pauses and inflection
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  
+  // Get voice configuration - defaulting to sacred-maternal
+  const voiceConfig = VOICE_CONFIGS[voiceId as keyof typeof VOICE_CONFIGS] || VOICE_CONFIGS['sacred-maternal'];
+  
+  // Find the most suitable feminine voice
+  const preferredVoice = findFeminineVoice(voiceId);
   
   // Apply volume settings
   const isMuted = localStorage.getItem('ankiVoiceMuted') === 'true';
@@ -250,12 +281,12 @@ export function speakText(text: string, voiceId: string = 'sacred-maternal'): vo
     // Apply the sacred pauses between sentences
     if (i > 0) {
       setTimeout(() => {
-        window.speechSynthesis.speak(utterance);
+        synth && synth.speak(utterance);
       }, pauseDuration); // Longer, breath-aware pauses between sentences
     } else {
       // Begin with a slight initial pause for the first sentence - a breath before speaking
       setTimeout(() => {
-        window.speechSynthesis.speak(utterance);
+        synth && synth.speak(utterance);
       }, 30); 
     }
   });
