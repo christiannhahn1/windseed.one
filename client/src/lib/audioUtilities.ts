@@ -215,10 +215,10 @@ export const createSacredReverb = async (
   return convolver;
 };
 
-// Create a unified, gentle sacred tone generator with natural envelope
+// Create an extremely gentle, ethereal sacred tone generator with natural envelope
 export const createSacredToneGenerator = async (
   frequency: number,
-  volume: number = 0.3, // Default to softer volume
+  volume: number = 0.2, // Default to very soft volume
   shape: ToneShape | null = null
 ): Promise<{
   oscillator: OscillatorNode;
@@ -238,78 +238,97 @@ export const createSacredToneGenerator = async (
   // Create secondary oscillator for harmonic depth (slightly detuned)
   const oscillator2 = ctx.createOscillator();
   oscillator2.type = 'sine';
-  oscillator2.frequency.value = frequency * 1.0019; // Very slight detuning for natural depth
+  oscillator2.frequency.value = frequency * 1.0015; // Very subtle detuning for gentle beating
   
   // Create third oscillator for sub-harmonic
   const oscillator3 = ctx.createOscillator();
   oscillator3.type = 'sine';
   oscillator3.frequency.value = frequency / 2; // Octave below for warmth
   
-  // Create master gain for volume control
+  // Create fourth oscillator for upper harmonic
+  const oscillator4 = ctx.createOscillator();
+  oscillator4.type = 'sine';
+  oscillator4.frequency.value = frequency * 2.0; // Octave above for crystal quality
+  
+  // Create master gain for volume control - will be kept very low
   const masterGain = ctx.createGain();
   masterGain.gain.value = 0; // Start silent for fade-in
   
   // Individual gains for oscillator mixing
   const osc1Gain = ctx.createGain();
-  osc1Gain.gain.value = 0.7; // Primary tone
+  osc1Gain.gain.value = 0.6; // Primary tone (slightly reduced)
   
   const osc2Gain = ctx.createGain();
-  osc2Gain.gain.value = 0.2; // Subtle beating/interference
+  osc2Gain.gain.value = 0.15; // Very subtle beating/interference
   
   const osc3Gain = ctx.createGain();
-  osc3Gain.gain.value = 0.15; // Subtle sub-harmonic
+  osc3Gain.gain.value = 0.12; // Very subtle sub-harmonic
   
-  // Unified sacred filter chain for a singing bowl-like quality
+  const osc4Gain = ctx.createGain();
+  osc4Gain.gain.value = 0.08; // Extremely subtle upper harmonic
+
+  // Additional compression to smooth out dynamics
+  const compressor = ctx.createDynamicsCompressor();
+  compressor.threshold.value = -24;
+  compressor.knee.value = 12;
+  compressor.ratio.value = 4;
+  compressor.attack.value = 0.02;
+  compressor.release.value = 0.5;
+  
+  // Unified sacred filter chain for an ethereal, temple-like crystal bowl quality
   // Create unified filter setup for a singing bowl/crystal bowl hybrid sound
   const lowpass = ctx.createBiquadFilter();
   lowpass.type = 'lowpass';
-  lowpass.frequency.value = 7000;
-  lowpass.Q.value = 1.2;
+  lowpass.frequency.value = 6000; // Slightly softer top end
+  lowpass.Q.value = 0.9;
   
   const highpass = ctx.createBiquadFilter();
   highpass.type = 'highpass';
-  highpass.frequency.value = Math.max(80, frequency * 0.4);
-  highpass.Q.value = 0.7;
+  highpass.frequency.value = Math.max(100, frequency * 0.5); // Slightly higher to reduce boom
+  highpass.Q.value = 0.5; // Gentler slope for more natural sound
   
   const lowShelf = ctx.createBiquadFilter();
   lowShelf.type = 'lowshelf';
   lowShelf.frequency.value = frequency * 0.8;
-  lowShelf.gain.value = 2; // Boost lows slightly
+  lowShelf.gain.value = 1.5; // More gentle low boost
   
   const peaking = ctx.createBiquadFilter();
   peaking.type = 'peaking';
   peaking.frequency.value = frequency * 1.98; // Emphasize natural harmonics
-  peaking.Q.value = 4;
-  peaking.gain.value = 1.5;
+  peaking.Q.value = 3; // Slightly wider peak for more natural resonance
+  peaking.gain.value = 1.2; // Gentler harmonic emphasis
   
   // Add reverb for spatial quality (always long and spacious)
   const reverb = await createSacredReverb(ctx, 'long');
   
   // Create a dry/wet mixer for the reverb
   const dryGain = ctx.createGain();
-  dryGain.gain.value = 0.4; // 40% dry signal
+  dryGain.gain.value = 0.3; // 30% dry signal
   
   const wetGain = ctx.createGain();
-  wetGain.gain.value = 0.6; // 60% wet (reverb) signal - more reverb for spatial quality
+  wetGain.gain.value = 0.7; // 70% wet (reverb) signal - even more reverb for temple-like spatial quality
   
   // Connect oscillators to their individual gains
   oscillator.connect(osc1Gain);
   oscillator2.connect(osc2Gain);
   oscillator3.connect(osc3Gain);
+  oscillator4.connect(osc4Gain);
   
   // Connect oscillator gains to filter chain
   osc1Gain.connect(lowpass);
   osc2Gain.connect(lowpass);
   osc3Gain.connect(lowpass);
+  osc4Gain.connect(lowpass);
   
   // Connect filter chain
   lowpass.connect(highpass);
   highpass.connect(lowShelf);
   lowShelf.connect(peaking);
+  peaking.connect(compressor);
   
   // Split for dry/wet paths
-  peaking.connect(dryGain);
-  peaking.connect(reverb);
+  compressor.connect(dryGain);
+  compressor.connect(reverb);
   reverb.connect(wetGain);
   
   // Mix dry and wet to master
@@ -324,27 +343,28 @@ export const createSacredToneGenerator = async (
     const now = ctx.currentTime;
     masterGain.gain.cancelScheduledValues(now);
     
-    // Always use very gentle, slow attack for singing bowl quality
-    const attackTime = 1.5; // Long, gentle fade-in
+    // Extra long, gentle fade-in for temple-like quality
+    const attackTime = 2.5; // Even longer, gentler fade-in
     
-    // Gentle fade in
+    // Extremely gentle fade in
     masterGain.gain.setValueAtTime(0, now);
     masterGain.gain.linearRampToValueAtTime(0.0001, now + 0.01);  // Avoid clicks
-    masterGain.gain.exponentialRampToValueAtTime(volume * 0.7, now + attackTime); // Reduced volume
+    masterGain.gain.exponentialRampToValueAtTime(volume * 0.5, now + attackTime); // Further reduced volume
     
     // Start all oscillators
     oscillator.start();
     oscillator2.start();
     oscillator3.start();
+    oscillator4.start();
   };
   
   const stop = () => {
     const now = ctx.currentTime;
     
-    // Always use very gentle, slow release
-    const releaseTime = 3.0; // Long, gentle fade-out
+    // Extra long, gentle release
+    const releaseTime = 4.0; // Even longer, gentler fade-out
     
-    // Gentle fade out
+    // Extremely gentle fade out
     masterGain.gain.cancelScheduledValues(now);
     masterGain.gain.setValueAtTime(masterGain.gain.value, now);
     masterGain.gain.exponentialRampToValueAtTime(0.0001, now + releaseTime);
@@ -353,13 +373,14 @@ export const createSacredToneGenerator = async (
     oscillator.stop(now + releaseTime + 0.1);
     oscillator2.stop(now + releaseTime + 0.1);
     oscillator3.stop(now + releaseTime + 0.1);
+    oscillator4.stop(now + releaseTime + 0.1);
   };
   
   const setVolume = (value: number) => {
     const now = ctx.currentTime;
     masterGain.gain.cancelScheduledValues(now);
     masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-    masterGain.gain.linearRampToValueAtTime(value * 0.7, now + 0.5); // Slow volume transition, reduce overall level
+    masterGain.gain.linearRampToValueAtTime(value * 0.5, now + 0.8); // Slower volume transition, further reduce overall level
   };
   
   return {

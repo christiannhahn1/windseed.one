@@ -83,18 +83,18 @@ export default function SolfeggioModule() {
   // Core state
   const [mode, setMode] = useState<'triad' | 'individual' | 'custom'>('triad');
   const [selectedTriad, setSelectedTriad] = useState<string>("none");
-  const [volumes, setVolumes] = useState<number[]>([0.3, 0.3, 0.3]);
+  const [volumes, setVolumes] = useState<number[]>([0.2, 0.2, 0.2]);
   const [isActive, setIsActive] = useState<boolean[]>([false, false, false]);
   
   // Individual frequency mode state
   const [individualFrequency, setIndividualFrequency] = useState<number>(528);
-  const [individualVolume, setIndividualVolume] = useState<number>(0.3);
+  const [individualVolume, setIndividualVolume] = useState<number>(0.2);
   const [isIndividualActive, setIsIndividualActive] = useState<boolean>(false);
   const [individualShape, setIndividualShape] = useState<ToneShape>('crystal');
   
   // Custom triad creation state
   const [customFrequencies, setCustomFrequencies] = useState<number[]>([417, 528, 963]);
-  const [customVolumes, setCustomVolumes] = useState<number[]>([0.3, 0.3, 0.3]);
+  const [customVolumes, setCustomVolumes] = useState<number[]>([0.2, 0.2, 0.2]);
   const [isCustomActive, setIsCustomActive] = useState<boolean[]>([false, false, false]);
   const [customShapes, setCustomShapes] = useState<ToneShape[]>(['singing-bowl', 'crystal', 'gong']);
   
@@ -297,7 +297,7 @@ export default function SolfeggioModule() {
     setSelectedTriad(value);
     
     // Reset volumes to default when changing triad
-    setVolumes([0.3, 0.3, 0.3]);
+    setVolumes([0.2, 0.2, 0.2]);
     
     if (value !== "none") {
       const triad = triads[value];
@@ -490,7 +490,7 @@ export default function SolfeggioModule() {
                 <button 
                   onClick={() => {
                     stopAllAudio();
-                    setVolumes([0.3, 0.3, 0.3]);
+                    setVolumes([0.2, 0.2, 0.2]);
                   }}
                   className="mt-6 px-4 py-2 bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
                            text-white shadow-[0_0_10px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] 
