@@ -51,16 +51,32 @@ export function setAudioEnabled(enabled: boolean): void {
 /**
  * Play ocean ambient sound
  * Gentle ocean waves for meditation background
+ * Uses the global AudioUtilities ocean sound system for persistence across pages
  */
 export function playOceanSound(volume: number = 0.5): void {
-  playAmbientSound('ocean', oceanSoundPath, volume, true);
+  // Import on demand to avoid circular dependencies
+  import('./audioUtilities').then(({ GlobalTones }) => {
+    GlobalTones.setOceanVolume(volume);
+  }).catch(error => {
+    console.error("Error setting ocean volume:", error);
+    // Fallback to the local implementation if global fails
+    playAmbientSound('ocean', oceanSoundPath, volume, true);
+  });
 }
 
 /**
  * Stop ocean ambient sound
+ * Uses the global AudioUtilities ocean sound system
  */
 export function stopOceanSound(): void {
-  stopAmbientSound('ocean');
+  // Import on demand to avoid circular dependencies
+  import('./audioUtilities').then(({ GlobalTones }) => {
+    GlobalTones.setOceanVolume(0);
+  }).catch(error => {
+    console.error("Error stopping ocean sound:", error);
+    // Fallback to the local implementation if global fails
+    stopAmbientSound('ocean');
+  });
 }
 
 /**

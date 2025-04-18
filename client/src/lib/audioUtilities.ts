@@ -48,8 +48,14 @@ export const GlobalTones = {
   // Initialize the ocean sound
   async initOceanSound() {
     try {
-      // Always recreate the controller to ensure it uses the singleton audio element
-      this.oceanSoundController = await createOceanSoundLayer(this.oceanVolume);
+      // If we already have a global controller, use that instead of creating a new one
+      if (globalOceanController) {
+        this.oceanSoundController = globalOceanController;
+      } else {
+        // Create a new controller and store it globally for persistence across pages
+        this.oceanSoundController = await createOceanSoundLayer(this.oceanVolume);
+        globalOceanController = this.oceanSoundController;
+      }
       
       // If we have an ocean volume set, ensure it's playing
       if (this.oceanVolume > 0 && this.oceanSoundController) {
@@ -719,6 +725,7 @@ export const createSacredToneGenerator = async (
 
 // Web Audio API implementation for ocean sound
 // These variables will persist as long as the page is open, even during React component re-renders
+// Using module-level singletons to ensure continuity across page navigation
 let oceanAudioContext: AudioContext | null = null;
 let oceanBufferSource: AudioBufferSourceNode | null = null;
 let oceanGainNode: GainNode | null = null;
@@ -726,6 +733,15 @@ let oceanAudioBuffer: AudioBuffer | null = null;
 let oceanCurrentVolume = 0;
 let oceanIsPlaying = false;
 let oceanFetchPromise: Promise<AudioBuffer> | null = null;
+
+// Store a reference to our ocean controller instance
+let globalOceanController: {
+  play: () => void;
+  stop: () => void;
+  setVolume: (value: number) => void;
+  isPlaying: () => boolean;
+  getVolume: () => number;
+} | null = null;
 
 // Fetch and decode the ocean sound buffer only once
 const getOceanSoundBuffer = async (): Promise<AudioBuffer> => {
