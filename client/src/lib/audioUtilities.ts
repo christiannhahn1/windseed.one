@@ -38,11 +38,11 @@ export const GlobalTones = {
     // Load settings from localStorage if available
     this.loadSettings();
     
-    // Setup ocean sound
+    // Setup ocean sound controller but DO NOT play automatically
     await this.initOceanSound();
     
-    // Restore any saved tones
-    await this.restoreSavedTones();
+    // DON'T automatically restore tones - we'll let the user manually start them
+    // await this.restoreSavedTones();
   },
   
   // Initialize the ocean sound
@@ -53,16 +53,15 @@ export const GlobalTones = {
         this.oceanSoundController = globalOceanController;
       } else {
         // Create a new controller and store it globally for persistence across pages
-        this.oceanSoundController = await createOceanSoundLayer(this.oceanVolume);
+        // But start with ZERO volume (silent) so it doesn't autoplay
+        this.oceanSoundController = await createOceanSoundLayer(0);
         globalOceanController = this.oceanSoundController;
       }
       
-      // If we have an ocean volume set, ensure it's playing
-      if (this.oceanVolume > 0 && this.oceanSoundController) {
-        // Apply master volume to get actual output volume
-        const actualVolume = this.oceanVolume * this.masterVolume;
-        this.oceanSoundController.setVolume(actualVolume);
-      }
+      // IMPORTANT: Don't automatically start playing even if volume was set
+      // We'll let the user explicitly start when they click a control
+      this.oceanVolume = 0; // Force to 0 initially
+      
     } catch (error) {
       console.error("Error initializing global ocean sound:", error);
     }
@@ -271,8 +270,9 @@ export const GlobalTones = {
       
       const settings = JSON.parse(savedSettings);
       
-      // Restore ocean volume
-      this.oceanVolume = settings.oceanVolume || 0;
+      // ALWAYS override with 0 volume to prevent auto-playing
+      // We'll show a UI control that lets the user turn them on
+      this.oceanVolume = 0;
       
       // Restore master volume
       if (typeof settings.masterVolume === 'number') {
@@ -284,12 +284,14 @@ export const GlobalTones = {
       
       // Restore tones data (but don't start playing them yet)
       if (settings.tones && Array.isArray(settings.tones)) {
+        // Store tones but with volume at 0 initially
         settings.tones.forEach((toneData: any) => {
-          if (toneData.frequency && toneData.volume > 0) {
+          if (toneData.frequency) {
             this.activeTones.set(toneData.frequency, {
               frequency: toneData.frequency,
               generator: null,
-              volume: toneData.volume,
+              // Force volume to 0 initially - we'll let the user turn it on
+              volume: 0,
               isActive: false,
               name: toneData.name || `${toneData.frequency}Hz`,
               shape: toneData.shape || 'crystal'

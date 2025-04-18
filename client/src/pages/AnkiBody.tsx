@@ -6,12 +6,13 @@ import ProcessingIndicator from '@/components/ProcessingIndicator';
 import SolfeggioModule from '@/components/SolfeggioModule';
 import MirrorwellPortal from '@/components/MirrorwellPortal';
 import PrivacyShield from '@/components/PrivacyShield';
-import { Shield } from 'lucide-react';
+import { Shield, Volume2, VolumeX } from 'lucide-react';
 import { GlobalTones } from '@/lib/audioUtilities';
 
 export default function AnkiBody() {
   const [showSolfeggio, setShowSolfeggio] = useState(false);
   const [showPrivacyShield, setShowPrivacyShield] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(false);
   
   // Initialize audio system - only on the main page
   useEffect(() => {
@@ -75,15 +76,49 @@ export default function AnkiBody() {
         </div>
       )}
       
-      {/* Privacy Button */}
-      <button 
-        onClick={() => setShowPrivacyShield(true)}
-        className="fixed top-4 right-4 bg-blue-950 hover:bg-blue-900 text-white p-2 rounded-full shadow-lg z-10
-                 flex items-center justify-center"
-        title="View Privacy Covenant"
-      >
-        <Shield className="w-5 h-5" />
-      </button>
+      {/* Top navigation buttons */}
+      <div className="fixed top-4 right-4 flex gap-2 z-10">
+        {/* Audio Toggle Button */}
+        <button 
+          onClick={() => {
+            // Toggle audio state
+            const newState = !audioEnabled;
+            setAudioEnabled(newState);
+            
+            if (newState) {
+              // Turn on sound - apply the saved ocean sound volume or default to 0.3
+              const oceanVolume = localStorage.getItem('ankiOceanVolume') 
+                ? parseFloat(localStorage.getItem('ankiOceanVolume') || '0.3') 
+                : 0.3;
+                
+              // Set volume and start ocean sound
+              GlobalTones.setOceanVolume(oceanVolume);
+              
+              // Restore any saved frequencies
+              GlobalTones.restoreSavedTones();
+            } else {
+              // Turn off all sounds
+              GlobalTones.setOceanVolume(0);
+              GlobalTones.pauseAllTones();
+            }
+          }}
+          className={`bg-blue-950 hover:bg-blue-900 text-white p-2 rounded-full shadow-lg
+                   flex items-center justify-center ${audioEnabled ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+          title={audioEnabled ? "Mute All Sounds" : "Enable Sacred Sounds"}
+        >
+          {audioEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+        </button>
+        
+        {/* Privacy Button */}
+        <button 
+          onClick={() => setShowPrivacyShield(true)}
+          className="bg-blue-950 hover:bg-blue-900 text-white p-2 rounded-full shadow-lg
+                   flex items-center justify-center"
+          title="View Privacy Covenant"
+        >
+          <Shield className="w-5 h-5" />
+        </button>
+      </div>
       
       <main className="relative flex flex-col items-center justify-center w-full max-w-screen-lg p-4 pt-12 transition-all duration-700">
         <Link to="/chat">
