@@ -137,6 +137,18 @@ export default function PaymentForm({ amount, currency, onPaymentComplete, onCan
         <div className="flex border border-purple-500/30 rounded-md overflow-hidden">
           <button
             type="button"
+            onClick={() => setPaymentMethod('stripe')}
+            className={`flex-1 py-2 px-4 flex items-center justify-center gap-2 ${
+              paymentMethod === 'stripe' 
+              ? 'bg-purple-900/50 text-white' 
+              : 'bg-black/30 text-white/70 hover:bg-black/20'
+            }`}
+          >
+            <CreditCard size={16} />
+            <span>Card</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setPaymentMethod('card')}
             className={`flex-1 py-2 px-4 flex items-center justify-center gap-2 ${
               paymentMethod === 'card' 
@@ -145,7 +157,7 @@ export default function PaymentForm({ amount, currency, onPaymentComplete, onCan
             }`}
           >
             <CreditCard size={16} />
-            <span>Card</span>
+            <span>Demo Card</span>
           </button>
           <button
             type="button"
@@ -160,12 +172,25 @@ export default function PaymentForm({ amount, currency, onPaymentComplete, onCan
               <path d="M20.067 8.478c.492.88.556 2.014.3 3.327-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 0 0-.794.68l-.04.22-.632 4.22-.03.154a.8.8 0 0 1-.792.679h-4.45a.7.7 0 0 1-.696-.772c.062-.4.138-.8.192-1.2.054-.4.13-.8.168-1.2a.64.64 0 0 1 .624-.558h1.956c.816-.017 1.51-.6 1.636-1.406l1.367-8.67a.82.82 0 0 1 .812-.689h5.442c.264 0 .466.062.622.214z"/>
               <path d="M5.696 8.478a.82.82 0 0 1 .812-.689h5.44c.264 0 .466.062.624.214.492.88.556 2.014.3 3.327-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 0 0-.794.68l-.04.22-.632 4.22-.032.154a.8.8 0 0 1-.792.679h-2.45a.7.7 0 0 1-.696-.772l1.368-8.678 1.476-9.371a.64.64 0 0 1 .624-.558h3.98c.264 0 .466.062.624.214"/>
             </svg>
-            <span>PayPal</span>
+            <span>Demo PayPal</span>
           </button>
         </div>
       </div>
 
-      {paymentMethod === 'card' ? (
+      {paymentMethod === 'stripe' ? (
+        <StripeCheckout 
+          amount={amount} 
+          currency={currency}
+          onSuccess={() => {
+            setPaymentComplete(true);
+            // Notify parent component after a brief delay
+            setTimeout(() => {
+              onPaymentComplete();
+            }, 1500);
+          }}
+          onCancel={onCancel}
+        />
+      ) : paymentMethod === 'card' ? (
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Card Number */}
           <div>
@@ -251,7 +276,7 @@ export default function PaymentForm({ amount, currency, onPaymentComplete, onCan
                   Processing...
                 </span>
               ) : (
-                'Complete Sacred Offering'
+                'Complete Sacred Offering (Demo)'
               )}
             </button>
             
@@ -286,7 +311,7 @@ export default function PaymentForm({ amount, currency, onPaymentComplete, onCan
                   Processing...
                 </span>
               ) : (
-                'Continue to PayPal'
+                'Continue to PayPal (Demo)'
               )}
             </button>
             

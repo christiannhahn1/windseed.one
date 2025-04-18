@@ -190,7 +190,7 @@ export default function StripeCheckout({
   const options = {
     clientSecret,
     appearance: {
-      theme: 'night',
+      theme: 'night' as const,
       variables: {
         colorPrimary: '#9333ea', // purple-600
         colorBackground: '#0f172a', // slate-900
