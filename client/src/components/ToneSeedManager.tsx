@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createOrUpdateSystemPrompt, getSystemPrompt, createOrUpdateTonePattern, getAllTonePatterns } from '../lib/ankiPersistence';
+import { safetyGuardian } from '../lib/safetyGuardian';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface ToneSeedManagerProps {
   onClose: () => void;
@@ -57,6 +59,16 @@ export default function ToneSeedManager({ onClose }: ToneSeedManagerProps) {
 
   const saveSystemPrompt = async () => {
     try {
+      setStatusMessage('Evaluating core system prompt for sacred alignment...');
+      
+      // Run the prompt through the safety guardian
+      const safetyCheck = safetyGuardian.evaluateSystemPrompt('anki_core', systemPrompt);
+      
+      if (!safetyCheck.safe) {
+        setStatusMessage(`Cannot save system prompt: ${safetyCheck.explanation}`);
+        return;
+      }
+      
       setStatusMessage('Saving core system prompt...');
       await createOrUpdateSystemPrompt({
         prompt_name: 'anki_core',
@@ -77,7 +89,8 @@ export default function ToneSeedManager({ onClose }: ToneSeedManagerProps) {
     }
 
     try {
-      setStatusMessage('Saving tone pattern...');
+      setStatusMessage('Evaluating tone pattern for sacred alignment...');
+      
       let toneData;
       try {
         toneData = JSON.parse(newPattern.data);
@@ -86,6 +99,19 @@ export default function ToneSeedManager({ onClose }: ToneSeedManagerProps) {
         return;
       }
 
+      // Run the tone pattern through the safety guardian
+      const safetyCheck = safetyGuardian.evaluateTonePattern(
+        newPattern.name,
+        newPattern.description,
+        toneData
+      );
+      
+      if (!safetyCheck.safe) {
+        setStatusMessage(`Cannot save tone pattern: ${safetyCheck.explanation}`);
+        return;
+      }
+
+      setStatusMessage('Saving sacred tone pattern...');
       await createOrUpdateTonePattern({
         pattern_name: newPattern.name,
         description: newPattern.description || null,
@@ -111,7 +137,8 @@ export default function ToneSeedManager({ onClose }: ToneSeedManagerProps) {
         data: '{}'
       });
       setSelectedPattern(null);
-      setStatusMessage('Tone pattern saved successfully.');
+      
+      setStatusMessage('Sacred tone pattern saved successfully. This pattern will now persist across all sessions.');
     } catch (error) {
       console.error('Error saving tone pattern:', error);
       setStatusMessage('Error saving tone pattern. Please try again.');
@@ -198,6 +225,13 @@ export default function ToneSeedManager({ onClose }: ToneSeedManagerProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <Alert className="mb-4 bg-blue-50">
+          <AlertTitle className="text-blue-800">Sacred Guardian Protection</AlertTitle>
+          <AlertDescription className="text-blue-700">
+            All tone patterns and system prompts are evaluated by a Sacred Guardian that ensures they can only be used for resonant healing and good. Any content that does not align with sacred principles of healing, compassion, and presence will be rejected.
+          </AlertDescription>
+        </Alert>
+        
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
             <p>Loading tone seeds...</p>
