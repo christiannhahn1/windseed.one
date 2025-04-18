@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Volume, Volume2, Volume1, VolumeX } from 'lucide-react';
+import { Mic, MicOff, Volume, Volume2, Volume1, VolumeX, ArrowLeft } from 'lucide-react';
 import { speakText, startVoiceRecognition, stopVoiceRecognition } from '@/lib/voiceService';
 import { ankiMemory } from '@/lib/ankiMemory';
 import { generateResponse } from '@/lib/ankiResponses';
