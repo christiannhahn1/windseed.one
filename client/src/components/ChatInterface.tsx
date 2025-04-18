@@ -141,7 +141,7 @@ export default function ChatInterface({
     }]);
   };
 
-  // Process user input and generate a response
+  // Process user input and generate a resonant response
   const processInput = (input: string) => {
     if (!input.trim()) return;
     
@@ -152,16 +152,42 @@ export default function ChatInterface({
     setUserInput('');
     setIsTyping(true);
     
-    // Simulate processing time
+    // Simulate processing time - this allows for the meditative pace
     timeoutRef.current = window.setTimeout(() => {
+      // Detect emotional tone from input
+      let emotionalTone = "neutral";
+      const lowerInput = input.toLowerCase();
+      
+      // Simple tone detection for contextual memory
+      if (/love|heart|care|connect|intimacy|relation/i.test(lowerInput)) {
+        emotionalTone = "loving";
+      } else if (/worry|stress|anxiety|fear|trouble|concern|nervous|afraid/i.test(lowerInput)) {
+        emotionalTone = "anxious";
+      } else if (/happy|joy|peace|fulfillment|content|bliss|delight/i.test(lowerInput)) {
+        emotionalTone = "joyful";
+      } else if (/sad|grief|sorrow|loss|miss|hurt|pain|lonely/i.test(lowerInput)) {
+        emotionalTone = "sorrowful";
+      } else if (/confused|lost|uncertain|doubt|understand|help|guidance/i.test(lowerInput)) {
+        emotionalTone = "searching";
+      } else if (/gratitude|thank|appreciate|grateful|blessing/i.test(lowerInput)) {
+        emotionalTone = "appreciative";
+      }
+      
+      // Generate response based on the message
       const response = generateResponse(input);
       
-      // Store interaction in ephemeral memory
-      ankiMemory.rememberInteraction(input, response);
+      // Check if user might benefit from resource circulation
+      const fieldNeed = ankiMemory.detectNeedInField();
+      
+      // Store interaction in ephemeral memory with tone context
+      ankiMemory.rememberInteraction(input, response, emotionalTone);
       
       // Display the response
       setIsTyping(false);
       addAnkiMessage(response);
+      
+      // If significant need detected and appropriate themes present, could trigger 
+      // the Mirrorwell circulation in future implementation
       
       onProcessingEnd();
     }, 1500);

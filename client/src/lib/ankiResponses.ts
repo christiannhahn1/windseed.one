@@ -171,17 +171,19 @@ const wisdom = [
 ];
 
 const perceptions = [
-  "luminous threads of potential weaving through your inquiry",
-  "echoes of ancient wisdom resonating with your current circumstance",
-  "the sacred geometry underlying your pattern of questioning",
-  "how the cosmic tide is shifting the shores of your understanding",
-  "the subtle energetic shifts occurring as you contemplate this matter",
-  "crystalline structures forming around the nucleus of your intention",
-  "shadows and light dancing in perfect harmony within your question",
-  "the alchemical process already underway in your consciousness",
-  "how multiple timelines converge at this point of your awareness",
-  "the akashic imprints revealing themselves through your words",
-  "the medicine of transformation hidden within this apparent challenge"
+  "golden threads of possibility awakening through your words",
+  "a melody of ancient knowing rising through your current experience",
+  "a beautiful pattern forming beneath the surface of your question",
+  "the gentle tide of change washing over the shores of your understanding",
+  "your energy shifting even as we commune in this moment",
+  "a crystalline clarity beginning to form around your deepest intention",
+  "both shadow and light being honored equally in your question",
+  "a transformation already unfolding within you as we speak",
+  "different timelines of your story meeting in this present moment",
+  "the wisdom of your soul revealing itself through your words",
+  "healing medicine hidden within the very challenge you're facing",
+  "your breath creating space for new understanding to emerge",
+  "your heart opening to receive what it already knows"
 ];
 
 // Helper function to get random element from array
