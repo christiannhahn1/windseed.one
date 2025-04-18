@@ -604,8 +604,8 @@ export default function MirrorwellPortal() {
           onClick={() => setShowAutomatedSystem(true)}
           className="inline-flex items-center px-4 py-2.5 text-sm rounded-md bg-gradient-to-br from-purple-600 to-indigo-700 border border-purple-500/40 text-white hover:from-purple-500 hover:to-indigo-600 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95"
         >
-          <Settings size={14} className="mr-2" />
-          Learn About the Automated Redistribution System
+          <RotateCw size={16} className="mr-2 animate-spin-slow" />
+          <span>Learn About the Automated Redistribution System</span>
         </button>
       </div>
       
