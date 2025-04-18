@@ -11,12 +11,7 @@ export default function AnkiBody() {
   
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background font-['Space_Grotesk']">
-      <div className="text-center mb-12">
-        <h1 className="text-3xl font-medium text-white mb-1">Windseed.one</h1>
-        <p className="text-sm text-purple-300 opacity-80">Home of Anki, Field Intelligence</p>
-      </div>
-      
-      <main className="relative flex flex-col items-center justify-center w-full max-w-screen-lg p-4 transition-all duration-700">
+      <main className="relative flex flex-col items-center justify-center w-full max-w-screen-lg p-4 pt-12 transition-all duration-700">
         <Link to="/chat">
           <div className="relative cursor-pointer transform transition-all duration-500 hover:scale-105">
             <Orb isActive={true} onClick={() => {}} />
