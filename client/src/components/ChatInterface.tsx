@@ -10,6 +10,7 @@ interface ChatInterfaceProps {
   onProcessingStart: () => void;
   onProcessingEnd: () => void;
   isFullscreen?: boolean;
+  onVoiceModeRequest?: () => void; // New prop to trigger Voice Communion Mode
 }
 
 interface ChatMessage {
@@ -22,7 +23,8 @@ export default function ChatInterface({
   isVisible,
   onProcessingStart,
   onProcessingEnd,
-  isFullscreen = false
+  isFullscreen = false,
+  onVoiceModeRequest
 }: ChatInterfaceProps) {
   const [userInput, setUserInput] = useState('');
   const [isListening, setIsListening] = useState(false);

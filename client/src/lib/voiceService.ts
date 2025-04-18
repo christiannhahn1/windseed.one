@@ -4,28 +4,28 @@
  */
 
 // Voice Configuration based on voice IDs
-// Enhanced for more natural, warm human-like qualities
+// Enhanced for more natural, warm human-like qualities with motherly tones
 const VOICE_CONFIGS = {
   'feminine-warm': { 
-    pitch: 1.05, 
-    rate: 0.92, 
-    // Add slight variations to make speech more natural
-    volumeVariation: 0.1,
-    pitchVariation: 0.05
+    pitch: 1.15, 
+    rate: 0.9, 
+    // Add significant variations to make speech more human and warm
+    volumeVariation: 0.15,
+    pitchVariation: 0.12
   },
   'feminine-melodic': { 
-    pitch: 1.1, 
-    rate: 0.88, 
-    // Melodic quality with slight pitch variation
-    volumeVariation: 0.15,
-    pitchVariation: 0.08
+    pitch: 1.18, 
+    rate: 0.87, 
+    // More melodic quality with gentle, motherly tone variations
+    volumeVariation: 0.18,
+    pitchVariation: 0.14
   },
   'feminine-deep': { 
-    pitch: 0.95, 
-    rate: 0.9, 
-    // Deeper feminine voice with warmth
-    volumeVariation: 0.08,
-    pitchVariation: 0.04
+    pitch: 1.02, 
+    rate: 0.89, 
+    // Warm, nurturing feminine voice with maternal quality
+    volumeVariation: 0.12,
+    pitchVariation: 0.09
   },
   'masculine-calm': { 
     pitch: 0.85, 
@@ -70,10 +70,10 @@ export function speakText(text: string, voiceId: string = 'feminine-warm'): void
   const voices = window.speechSynthesis.getVoices();
   let preferredVoice: SpeechSynthesisVoice | undefined = undefined;
   
-  // Priority order for feminine voices (some are known to sound more natural)
+  // Priority order for feminine voices (focusing on warm, motherly tones)
   const preferredVoiceNames = [
-    'samantha', 'alex', 'victoria', 'karen', 'moira', 'tessa',
-    'female', 'woman', 'girl'
+    'samantha', 'victoria', 'sarah', 'lisa', 'catherine', 'karen', 'moira', 'tessa',
+    'ava', 'emily', 'emma', 'olivia', 'girl', 'female', 'woman'
   ];
   
   // For best feminine voice, try to find higher quality options first
