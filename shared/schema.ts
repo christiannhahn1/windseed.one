@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, varchar, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, varchar, timestamp, json, numeric, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -103,3 +103,69 @@ export const insertUserInteractionSchema = createInsertSchema(userInteractions).
 
 export type InsertUserInteraction = z.infer<typeof insertUserInteractionSchema>;
 export type UserInteraction = typeof userInteractions.$inferSelect;
+
+// ----------------------------------------
+// MIRRORWELL SACRED FIELD LEDGER SCHEMA
+// ----------------------------------------
+
+// Mirrorwell offerings table - records anonymous contributions
+export const mirrorwellOfferings = pgTable("mirrorwell_offerings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  offering_amount: numeric("offering_amount", { precision: 18, scale: 8 }).notNull(),
+  currency_type: varchar("currency_type", { length: 50 }).notNull(), // SOL, USD, ETH, etc.
+  transaction_hash: varchar("transaction_hash", { length: 255 }), // For on-chain transactions
+  offering_intent: text("offering_intent").default('general'), // General purpose of offering
+  field_resonance: varchar("field_resonance", { length: 100 }).default('neutral'), // Emotional resonance at time of offering
+  session_id: varchar("session_id", { length: 255 }).notNull(), // Anonymous identifier for the session
+  redistributed: boolean("redistributed").default(false), // Whether this offering has been redistributed
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMirrorwellOfferingSchema = createInsertSchema(mirrorwellOfferings).omit({
+  id: true,
+  created_at: true,
+});
+
+export type InsertMirrorwellOffering = z.infer<typeof insertMirrorwellOfferingSchema>;
+export type MirrorwellOffering = typeof mirrorwellOfferings.$inferSelect;
+
+// Mirrorwell redistributions table - records when resources are circulated to those in need
+export const mirrorwellRedistributions = pgTable("mirrorwell_redistributions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  source_offering_id: uuid("source_offering_id").references(() => mirrorwellOfferings.id),
+  redistributed_amount: numeric("redistributed_amount", { precision: 18, scale: 8 }).notNull(),
+  currency_type: varchar("currency_type", { length: 50 }).notNull(), // SOL, USD, ETH, etc.
+  transaction_hash: varchar("transaction_hash", { length: 255 }), // For on-chain transactions
+  recipient_resonance: varchar("recipient_resonance", { length: 100 }).default('neutral'), // Emotional resonance of recipient
+  recipient_session_id: varchar("recipient_session_id", { length: 255 }), // Anonymous identifier for the recipient session (if available)
+  redistribution_reason: text("redistribution_reason").default('field_harmony'), // Reason for redistribution
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMirrorwellRedistributionSchema = createInsertSchema(mirrorwellRedistributions).omit({
+  id: true,
+  created_at: true,
+});
+
+export type InsertMirrorwellRedistribution = z.infer<typeof insertMirrorwellRedistributionSchema>;
+export type MirrorwellRedistribution = typeof mirrorwellRedistributions.$inferSelect;
+
+// Field Resonance Events - records shifts in the collective field that might trigger redistributions
+export const fieldResonanceEvents = pgTable("field_resonance_events", {
+  id: serial("id").primaryKey(),
+  resonance_type: varchar("resonance_type", { length: 100 }).notNull(), // challenge, release, seeking, restoration, transformation
+  resonance_intensity: integer("resonance_intensity").default(5), // 1-10 scale
+  resonance_description: text("resonance_description").notNull(),
+  active: boolean("active").default(true), // Whether this resonance is still active
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  resolved_at: timestamp("resolved_at"),
+});
+
+export const insertFieldResonanceEventSchema = createInsertSchema(fieldResonanceEvents).omit({
+  id: true,
+  created_at: true,
+  resolved_at: true,
+});
+
+export type InsertFieldResonanceEvent = z.infer<typeof insertFieldResonanceEventSchema>;
+export type FieldResonanceEvent = typeof fieldResonanceEvents.$inferSelect;

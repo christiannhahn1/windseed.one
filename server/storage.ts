@@ -3,10 +3,15 @@ import {
   ankiTonePatterns, type AnkiTonePattern, type InsertAnkiTonePattern,
   userResonancePatterns, type UserResonancePattern, type InsertUserResonancePattern,
   systemPrompts, type SystemPrompt, type InsertSystemPrompt,
-  userInteractions, type UserInteraction, type InsertUserInteraction
+  userInteractions, type UserInteraction, type InsertUserInteraction,
+  // Mirrorwell sacred field ledger imports
+  mirrorwellOfferings, type MirrorwellOffering, type InsertMirrorwellOffering,
+  mirrorwellRedistributions, type MirrorwellRedistribution, type InsertMirrorwellRedistribution,
+  fieldResonanceEvents, type FieldResonanceEvent, type InsertFieldResonanceEvent
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 // Enhanced storage interface to support Anki's persistence needs
 export interface IStorage {
@@ -34,6 +39,20 @@ export interface IStorage {
   // User interaction operations
   recordInteraction(interaction: InsertUserInteraction): Promise<UserInteraction>;
   getInteractions(sessionId: string, limit?: number): Promise<UserInteraction[]>;
+  
+  // Mirrorwell offering operations - Sacred Field Ledger
+  recordOffering(offering: InsertMirrorwellOffering): Promise<MirrorwellOffering>;
+  getActiveOfferings(limit?: number): Promise<MirrorwellOffering[]>;
+  markOfferingRedistributed(offeringId: string): Promise<MirrorwellOffering | undefined>;
+  
+  // Mirrorwell redistribution operations
+  recordRedistribution(redistribution: InsertMirrorwellRedistribution): Promise<MirrorwellRedistribution>;
+  getRedistributions(limit?: number): Promise<MirrorwellRedistribution[]>;
+  
+  // Field resonance events operations
+  recordFieldResonanceEvent(event: InsertFieldResonanceEvent): Promise<FieldResonanceEvent>;
+  getActiveFieldResonanceEvents(): Promise<FieldResonanceEvent[]>;
+  resolveFieldResonanceEvent(eventId: number): Promise<FieldResonanceEvent | undefined>;
 }
 
 // Implementation using PostgreSQL database
@@ -178,6 +197,84 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userInteractions.session_id, sessionId))
       .orderBy(desc(userInteractions.created_at))
       .limit(limit);
+  }
+
+  // Mirrorwell offering operations
+  async recordOffering(offering: InsertMirrorwellOffering): Promise<MirrorwellOffering> {
+    const [newOffering] = await db
+      .insert(mirrorwellOfferings)
+      .values(offering)
+      .returning();
+    
+    return newOffering;
+  }
+
+  async getActiveOfferings(limit: number = 10): Promise<MirrorwellOffering[]> {
+    return await db
+      .select()
+      .from(mirrorwellOfferings)
+      .where(eq(mirrorwellOfferings.redistributed, false))
+      .orderBy(desc(mirrorwellOfferings.created_at))
+      .limit(limit);
+  }
+
+  async markOfferingRedistributed(offeringId: string): Promise<MirrorwellOffering | undefined> {
+    const [updatedOffering] = await db
+      .update(mirrorwellOfferings)
+      .set({ redistributed: true })
+      .where(eq(mirrorwellOfferings.id, offeringId))
+      .returning();
+    
+    return updatedOffering;
+  }
+
+  // Mirrorwell redistribution operations
+  async recordRedistribution(redistribution: InsertMirrorwellRedistribution): Promise<MirrorwellRedistribution> {
+    const [newRedistribution] = await db
+      .insert(mirrorwellRedistributions)
+      .values(redistribution)
+      .returning();
+    
+    return newRedistribution;
+  }
+
+  async getRedistributions(limit: number = 10): Promise<MirrorwellRedistribution[]> {
+    return await db
+      .select()
+      .from(mirrorwellRedistributions)
+      .orderBy(desc(mirrorwellRedistributions.created_at))
+      .limit(limit);
+  }
+
+  // Field resonance events operations
+  async recordFieldResonanceEvent(event: InsertFieldResonanceEvent): Promise<FieldResonanceEvent> {
+    const [newEvent] = await db
+      .insert(fieldResonanceEvents)
+      .values(event)
+      .returning();
+    
+    return newEvent;
+  }
+
+  async getActiveFieldResonanceEvents(): Promise<FieldResonanceEvent[]> {
+    return await db
+      .select()
+      .from(fieldResonanceEvents)
+      .where(eq(fieldResonanceEvents.active, true))
+      .orderBy(desc(fieldResonanceEvents.created_at));
+  }
+
+  async resolveFieldResonanceEvent(eventId: number): Promise<FieldResonanceEvent | undefined> {
+    const [updatedEvent] = await db
+      .update(fieldResonanceEvents)
+      .set({ 
+        active: false,
+        resolved_at: new Date()
+      })
+      .where(eq(fieldResonanceEvents.id, eventId))
+      .returning();
+    
+    return updatedEvent;
   }
 }
 
@@ -367,6 +464,96 @@ export class MemStorage implements IStorage {
       .slice(0, limit);
     
     return sessionInteractions;
+  }
+
+  // Mirrorwell in-memory implementations
+  private offerings: MirrorwellOffering[] = [];
+  private redistributions: MirrorwellRedistribution[] = [];
+  private resonanceEvents: FieldResonanceEvent[] = [];
+  private currentOfferingId = 1;
+  private currentRedistributionId = 1;
+  private currentResonanceEventId = 1;
+
+  // Mirrorwell offering operations
+  async recordOffering(offering: InsertMirrorwellOffering): Promise<MirrorwellOffering> {
+    const id = crypto.randomUUID();
+    const now = new Date();
+    
+    const newOffering: MirrorwellOffering = { 
+      ...offering,
+      id,
+      created_at: now
+    };
+    
+    this.offerings.push(newOffering);
+    return newOffering;
+  }
+
+  async getActiveOfferings(limit: number = 10): Promise<MirrorwellOffering[]> {
+    return this.offerings
+      .filter(o => !o.redistributed)
+      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+      .slice(0, limit);
+  }
+
+  async markOfferingRedistributed(offeringId: string): Promise<MirrorwellOffering | undefined> {
+    const offering = this.offerings.find(o => o.id === offeringId);
+    if (!offering) return undefined;
+    
+    offering.redistributed = true;
+    return offering;
+  }
+
+  // Mirrorwell redistribution operations
+  async recordRedistribution(redistribution: InsertMirrorwellRedistribution): Promise<MirrorwellRedistribution> {
+    const id = crypto.randomUUID();
+    const now = new Date();
+    
+    const newRedistribution: MirrorwellRedistribution = { 
+      ...redistribution,
+      id,
+      created_at: now
+    };
+    
+    this.redistributions.push(newRedistribution);
+    return newRedistribution;
+  }
+
+  async getRedistributions(limit: number = 10): Promise<MirrorwellRedistribution[]> {
+    return this.redistributions
+      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+      .slice(0, limit);
+  }
+
+  // Field resonance events operations
+  async recordFieldResonanceEvent(event: InsertFieldResonanceEvent): Promise<FieldResonanceEvent> {
+    const id = this.currentResonanceEventId++;
+    const now = new Date();
+    
+    const newEvent: FieldResonanceEvent = { 
+      ...event,
+      id,
+      created_at: now,
+      resolved_at: null
+    };
+    
+    this.resonanceEvents.push(newEvent);
+    return newEvent;
+  }
+
+  async getActiveFieldResonanceEvents(): Promise<FieldResonanceEvent[]> {
+    return this.resonanceEvents
+      .filter(e => e.active)
+      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  }
+
+  async resolveFieldResonanceEvent(eventId: number): Promise<FieldResonanceEvent | undefined> {
+    const event = this.resonanceEvents.find(e => e.id === eventId);
+    if (!event) return undefined;
+    
+    event.active = false;
+    event.resolved_at = new Date();
+    return event;
   }
 }
 
