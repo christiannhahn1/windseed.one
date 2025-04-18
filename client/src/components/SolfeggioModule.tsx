@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import oceanSoundPath from '@assets/Gentle Ocean Current.wav';
+import { createSacredToneGenerator, createOceanSoundLayer, ToneShape } from '../lib/audioUtilities';
 
 // Solfeggio frequency information
 interface FrequencyInfo {
   value: number;
   description: string;
   category: 'healing' | 'spiritual' | 'emotional' | 'physical';
+  idealToneShape?: ToneShape;
 }
 
 interface Triad {
@@ -13,24 +14,25 @@ interface Triad {
   frequencies: number[];
   descriptions: string[];
   category: string;
+  toneShapes?: ToneShape[]; // Optional specific tone shapes for each frequency
 }
 
-// Comprehensive Solfeggio frequencies database with descriptions
+// Comprehensive Solfeggio frequencies database with descriptions and ideal tone shapes
 const solfeggioFrequencies: FrequencyInfo[] = [
-  { value: 174, description: "Reduce pain and stress", category: 'physical' },
-  { value: 285, description: "Influence energy fields", category: 'spiritual' },
-  { value: 324, description: "Bridge between realms", category: 'spiritual' },
-  { value: 396, description: "Liberation from fear and guilt", category: 'emotional' },
-  { value: 417, description: "Facilitate change and clearing", category: 'spiritual' },
-  { value: 432, description: "Sacred harmony with universal patterns", category: 'spiritual' },
-  { value: 528, description: "Transformation and DNA repair", category: 'healing' },
-  { value: 639, description: "Harmonize relationships", category: 'emotional' },
-  { value: 741, description: "Awakening intuition", category: 'spiritual' },
-  { value: 852, description: "Return to spiritual order", category: 'spiritual' },
-  { value: 963, description: "Awakening to cosmic consciousness", category: 'spiritual' }
+  { value: 174, description: "Reduce pain and stress", category: 'physical', idealToneShape: 'bell' },
+  { value: 285, description: "Influence energy fields", category: 'spiritual', idealToneShape: 'singing-bowl' },
+  { value: 324, description: "Bridge between realms", category: 'spiritual', idealToneShape: 'singing-bowl' },
+  { value: 396, description: "Liberation from fear and guilt", category: 'emotional', idealToneShape: 'bell' },
+  { value: 417, description: "Facilitate change and clearing", category: 'spiritual', idealToneShape: 'singing-bowl' },
+  { value: 432, description: "Sacred harmony with universal patterns", category: 'spiritual', idealToneShape: 'crystal' },
+  { value: 528, description: "Transformation and DNA repair", category: 'healing', idealToneShape: 'crystal' },
+  { value: 639, description: "Harmonize relationships", category: 'emotional', idealToneShape: 'singing-bowl' },
+  { value: 741, description: "Awakening intuition", category: 'spiritual', idealToneShape: 'chime' },
+  { value: 852, description: "Return to spiritual order", category: 'spiritual', idealToneShape: 'gong' },
+  { value: 963, description: "Awakening to cosmic consciousness", category: 'spiritual', idealToneShape: 'gong' }
 ];
 
-// Predefined triad combinations
+// Predefined triad combinations with specific tone shapes
 const triads: Record<string, Triad> = {
   sacredReturn: {
     name: "Sacred Return",
@@ -40,7 +42,8 @@ const triads: Record<string, Triad> = {
       "Transformation and miracles, DNA repair",
       "Awakening and return to oneness, cosmic consciousness"
     ],
-    category: "Spiritual Awakening"
+    category: "Spiritual Awakening",
+    toneShapes: ['singing-bowl', 'crystal', 'gong']
   },
   completionMirror: {
     name: "Completion Mirror",
@@ -50,7 +53,8 @@ const triads: Record<string, Triad> = {
       "Harmonizing relationships and connections",
       "Awakening and return to oneness, cosmic consciousness"
     ],
-    category: "Emotional Healing"
+    category: "Emotional Healing",
+    toneShapes: ['singing-bowl', 'singing-bowl', 'gong']
   },
   innerHealing: {
     name: "Inner Healing",
@@ -60,10 +64,21 @@ const triads: Record<string, Triad> = {
       "Transformation and DNA repair",
       "Awakening intuition and expression"
     ],
-    category: "Deep Healing"
+    category: "Deep Healing",
+    toneShapes: ['bell', 'crystal', 'chime']
   }
 };
 
+// Sacred tone shape descriptors
+const toneShapeDescriptions: Record<ToneShape, string> = {
+  'crystal': 'Crystal Bowl - Clear, purifying tones with harmonic overtones',
+  'gong': 'Sacred Gong - Deep, resonant waves with mystical vibration',
+  'bell': 'Temple Bell - Rooted, hollow, grounding presence',
+  'singing-bowl': 'Tibetan Singing Bowl - Warm, embodied circular resonance',
+  'chime': 'Sacred Chime - Light, airy, ethereal quality'
+};
+
+// Component interface
 export default function SolfeggioModule() {
   // Core state
   const [mode, setMode] = useState<'triad' | 'individual' | 'custom'>('triad');
@@ -75,151 +90,123 @@ export default function SolfeggioModule() {
   const [individualFrequency, setIndividualFrequency] = useState<number>(528);
   const [individualVolume, setIndividualVolume] = useState<number>(0.5);
   const [isIndividualActive, setIsIndividualActive] = useState<boolean>(false);
+  const [individualShape, setIndividualShape] = useState<ToneShape>('crystal');
   
   // Custom triad creation state
   const [customFrequencies, setCustomFrequencies] = useState<number[]>([417, 528, 963]);
   const [customVolumes, setCustomVolumes] = useState<number[]>([0.5, 0.5, 0.5]);
   const [isCustomActive, setIsCustomActive] = useState<boolean[]>([false, false, false]);
+  const [customShapes, setCustomShapes] = useState<ToneShape[]>(['singing-bowl', 'crystal', 'gong']);
   
   // Ocean sound state
   const [oceanVolume, setOceanVolume] = useState<number>(0);
   const [isOceanPlaying, setIsOceanPlaying] = useState<boolean>(false);
-  const oceanAudioRef = useRef<HTMLAudioElement | null>(null);
   
-  // Web Audio API references
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const oscillatorsRef = useRef<OscillatorNode[]>([]);
-  const gainNodesRef = useRef<GainNode[]>([]);
+  // References for sacred tone generators
+  const triadGeneratorsRef = useRef<Array<{
+    oscillator: OscillatorNode;
+    gainNode: GainNode;
+    filterInput: AudioNode;
+    start: () => void;
+    stop: () => void;
+    setVolume: (value: number) => void;
+  } | null>>([]);
   
-  // Individual oscillator references
-  const individualOscillatorRef = useRef<OscillatorNode | null>(null);
-  const individualGainNodeRef = useRef<GainNode | null>(null);
+  const individualGeneratorRef = useRef<{
+    oscillator: OscillatorNode;
+    gainNode: GainNode;
+    filterInput: AudioNode;
+    start: () => void;
+    stop: () => void;
+    setVolume: (value: number) => void;
+  } | null>(null);
   
-  // Custom triad oscillator references
-  const customOscillatorsRef = useRef<OscillatorNode[]>([]);
-  const customGainNodesRef = useRef<GainNode[]>([]);
+  const customGeneratorsRef = useRef<Array<{
+    oscillator: OscillatorNode;
+    gainNode: GainNode;
+    filterInput: AudioNode;
+    start: () => void;
+    stop: () => void;
+    setVolume: (value: number) => void;
+  } | null>>([]);
   
-  // Initialize audio context on first interaction
-  const initAudioContext = () => {
-    if (!audioContextRef.current) {
-      try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        audioContextRef.current = new AudioContext();
-      } catch (e) {
-        console.error("Web Audio API is not supported in this browser:", e);
-      }
-    }
-    return audioContextRef.current;
-  };
+  // Ocean sound controller reference
+  const oceanControllerRef = useRef<{
+    play: () => void;
+    stop: () => void;
+    setVolume: (value: number) => void;
+    isPlaying: () => boolean;
+  } | null>(null);
   
-  // Create a sine wave oscillator at the specified frequency
-  const createTone = (frequency: number, volume: number) => {
-    const ctx = initAudioContext();
-    if (!ctx) return { oscillator: null, gainNode: null };
-    
-    // Create oscillator
-    const oscillator = ctx.createOscillator();
-    oscillator.type = 'sine';
-    oscillator.frequency.value = frequency;
-    
-    // Create gain node for volume control
-    const gainNode = ctx.createGain();
-    gainNode.gain.value = volume;
-    
-    // Connect oscillator to gain node and gain node to output
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    
-    return { oscillator, gainNode };
-  };
-  
-  // Initialize ocean sound
+  // Initialize ocean sound on component mount
   useEffect(() => {
-    // Create audio element for ocean sound
-    const oceanAudio = new Audio(oceanSoundPath);
-    oceanAudio.loop = true;
-    oceanAudio.volume = oceanVolume;
-    oceanAudioRef.current = oceanAudio;
+    // Initialize ocean sound controller
+    const initOceanSound = async () => {
+      try {
+        const controller = await createOceanSoundLayer(0);
+        oceanControllerRef.current = controller;
+      } catch (error) {
+        console.error("Error initializing ocean sound:", error);
+      }
+    };
     
+    initOceanSound();
+    
+    // Cleanup on unmount
     return () => {
-      if (oceanAudioRef.current) {
-        oceanAudioRef.current.pause();
-        oceanAudioRef.current = null;
+      if (oceanControllerRef.current) {
+        oceanControllerRef.current.stop();
+        oceanControllerRef.current = null;
       }
     };
   }, []);
   
-  // Handle ocean sound volume changes
+  // Handle ocean volume changes
   useEffect(() => {
-    if (oceanAudioRef.current) {
-      oceanAudioRef.current.volume = oceanVolume;
-      
-      if (oceanVolume > 0 && !isOceanPlaying) {
-        oceanAudioRef.current.play().catch(e => console.error("Error playing ocean sound:", e));
-        setIsOceanPlaying(true);
-      } else if (oceanVolume === 0 && isOceanPlaying) {
-        oceanAudioRef.current.pause();
-        setIsOceanPlaying(false);
-      }
+    if (oceanControllerRef.current) {
+      oceanControllerRef.current.setVolume(oceanVolume);
+      setIsOceanPlaying(oceanVolume > 0);
     }
-  }, [oceanVolume, isOceanPlaying]);
+  }, [oceanVolume]);
   
   // Stop all audio sources
   const stopAllAudio = () => {
-    // Stop triad oscillators
-    try {
-      oscillatorsRef.current.forEach(osc => {
-        if (osc) {
-          osc.stop();
-          osc.disconnect();
-        }
-      });
-    } catch (e) {
-      // Ignore errors when stopping oscillators
-    }
-    
-    // Stop individual oscillator
-    try {
-      if (individualOscillatorRef.current) {
-        individualOscillatorRef.current.stop();
-        individualOscillatorRef.current.disconnect();
-        individualOscillatorRef.current = null;
-        individualGainNodeRef.current = null;
+    // Stop triad tones
+    triadGeneratorsRef.current.forEach(generator => {
+      if (generator) {
+        generator.stop();
       }
-    } catch (e) {
-      // Ignore errors
-    }
-    
-    // Stop custom triad oscillators
-    try {
-      customOscillatorsRef.current.forEach(osc => {
-        if (osc) {
-          osc.stop();
-          osc.disconnect();
-        }
-      });
-    } catch (e) {
-      // Ignore errors
-    }
-    
-    // Reset state
-    oscillatorsRef.current = [];
-    gainNodesRef.current = [];
-    customOscillatorsRef.current = [];
-    customGainNodesRef.current = [];
+    });
+    triadGeneratorsRef.current = [];
     setIsActive([false, false, false]);
-    setIsIndividualActive(false);
+    
+    // Stop individual tone
+    if (individualGeneratorRef.current) {
+      individualGeneratorRef.current.stop();
+      individualGeneratorRef.current = null;
+      setIsIndividualActive(false);
+    }
+    
+    // Stop custom triad tones
+    customGeneratorsRef.current.forEach(generator => {
+      if (generator) {
+        generator.stop();
+      }
+    });
+    customGeneratorsRef.current = [];
     setIsCustomActive([false, false, false]);
+    
+    // Reset UI state
     setSelectedTriad("none");
   };
   
   // Stop ocean sound
   const stopOceanSound = () => {
-    if (oceanAudioRef.current && isOceanPlaying) {
-      oceanAudioRef.current.pause();
+    if (oceanControllerRef.current) {
+      oceanControllerRef.current.stop();
       setIsOceanPlaying(false);
+      setOceanVolume(0);
     }
-    setOceanVolume(0);
   };
   
   // Update volume for a specific frequency in triad mode
@@ -228,9 +215,9 @@ export default function SolfeggioModule() {
     newVolumes[index] = value;
     setVolumes(newVolumes);
 
-    // Update gain node if it exists
-    if (gainNodesRef.current[index]) {
-      gainNodesRef.current[index].gain.value = value;
+    // Update generator volume if it exists
+    if (triadGeneratorsRef.current[index]) {
+      triadGeneratorsRef.current[index]?.setVolume(value);
       
       // Update active state based on volume
       const newActive = [...isActive];
@@ -239,14 +226,50 @@ export default function SolfeggioModule() {
     }
   };
   
+  // Update individual frequency and shape
+  const handleIndividualFrequencyChange = (freq: number) => {
+    setIndividualFrequency(freq);
+    
+    // Find the ideal tone shape for this frequency
+    const frequencyInfo = solfeggioFrequencies.find(f => f.value === freq);
+    if (frequencyInfo?.idealToneShape) {
+      setIndividualShape(frequencyInfo.idealToneShape);
+    }
+  };
+  
   // Update volume for individual frequency
   const handleIndividualVolumeChange = (value: number) => {
     setIndividualVolume(value);
     
-    if (individualGainNodeRef.current) {
-      individualGainNodeRef.current.gain.value = value;
+    if (individualGeneratorRef.current) {
+      individualGeneratorRef.current.setVolume(value);
       setIsIndividualActive(value > 0);
     }
+  };
+  
+  // Update custom frequency
+  const updateCustomFrequency = (index: number, frequency: number) => {
+    const newFrequencies = [...customFrequencies];
+    newFrequencies[index] = frequency;
+    setCustomFrequencies(newFrequencies);
+    
+    // Update shape if active generator will be replaced
+    if (isCustomActive[index]) {
+      // Find the ideal tone shape for this frequency
+      const frequencyInfo = solfeggioFrequencies.find(f => f.value === frequency);
+      if (frequencyInfo?.idealToneShape) {
+        const newShapes = [...customShapes];
+        newShapes[index] = frequencyInfo.idealToneShape;
+        setCustomShapes(newShapes);
+      }
+    }
+  };
+  
+  // Update custom tone shape
+  const updateCustomShape = (index: number, shape: ToneShape) => {
+    const newShapes = [...customShapes];
+    newShapes[index] = shape;
+    setCustomShapes(newShapes);
   };
   
   // Update volume for a custom triad frequency
@@ -255,8 +278,8 @@ export default function SolfeggioModule() {
     newVolumes[index] = value;
     setCustomVolumes(newVolumes);
     
-    if (customGainNodesRef.current[index]) {
-      customGainNodesRef.current[index].gain.value = value;
+    if (customGeneratorsRef.current[index]) {
+      customGeneratorsRef.current[index]?.setVolume(value);
       
       const newActive = [...isCustomActive];
       newActive[index] = value > 0;
@@ -264,8 +287,8 @@ export default function SolfeggioModule() {
     }
   };
   
-  // Handle triad selection
-  const handleTriadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  // Handle triad selection and playback
+  const handleTriadChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     
     // Stop previous audio before switching
@@ -277,114 +300,110 @@ export default function SolfeggioModule() {
     setVolumes([0.5, 0.5, 0.5]);
     
     if (value !== "none") {
-      // Start tones with small delay to prevent audio glitches
-      setTimeout(() => {
-        const frequencies = triads[value].frequencies;
-        const newOscillators: OscillatorNode[] = [];
-        const newGainNodes: GainNode[] = [];
-        const newActive = [true, true, true];
+      const triad = triads[value];
+      const newGenerators: Array<typeof individualGeneratorRef.current> = [];
+      const newActive = [false, false, false];
+      
+      // Create and start each sacred tone in the triad
+      try {
+        for (let i = 0; i < triad.frequencies.length; i++) {
+          const frequency = triad.frequencies[i];
+          const volume = volumes[i];
+          const shape = triad.toneShapes?.[i] || 
+                       solfeggioFrequencies.find(f => f.value === frequency)?.idealToneShape ||
+                       'singing-bowl';
+          
+          // Create the sacred tone generator with the appropriate shape
+          const generator = await createSacredToneGenerator(frequency, volume, shape);
+          generator.start();
+          
+          newGenerators[i] = generator;
+          newActive[i] = true;
+        }
         
-        frequencies.forEach((freq, index) => {
-          try {
-            const { oscillator, gainNode } = createTone(freq, volumes[index]);
-            
-            if (oscillator && gainNode) {
-              oscillator.start();
-              newOscillators.push(oscillator);
-              newGainNodes.push(gainNode);
-            } else {
-              newActive[index] = false;
-              newOscillators.push(null as unknown as OscillatorNode);
-              newGainNodes.push(null as unknown as GainNode);
-            }
-          } catch (e) {
-            console.error(`Error creating tone for ${freq}Hz:`, e);
-            newActive[index] = false;
-            newOscillators.push(null as unknown as OscillatorNode);
-            newGainNodes.push(null as unknown as GainNode);
-          }
-        });
-        
-        oscillatorsRef.current = newOscillators;
-        gainNodesRef.current = newGainNodes;
+        triadGeneratorsRef.current = newGenerators;
         setIsActive(newActive);
-      }, 300);
+      } catch (error) {
+        console.error("Error creating triad tones:", error);
+      }
     }
   };
   
   // Start an individual frequency
-  const startIndividualFrequency = () => {
-    // Stop previous individual tone if any
-    try {
-      if (individualOscillatorRef.current) {
-        individualOscillatorRef.current.stop();
-        individualOscillatorRef.current.disconnect();
-      }
-    } catch (e) {
-      // Ignore errors
+  const startIndividualFrequency = async () => {
+    // Stop previous tone if any
+    if (individualGeneratorRef.current) {
+      individualGeneratorRef.current.stop();
+      individualGeneratorRef.current = null;
     }
     
-    // Create new tone
-    const { oscillator, gainNode } = createTone(individualFrequency, individualVolume);
-    
-    if (oscillator && gainNode) {
-      oscillator.start();
-      individualOscillatorRef.current = oscillator;
-      individualGainNodeRef.current = gainNode;
+    try {
+      // Create new sacred tone generator
+      const generator = await createSacredToneGenerator(
+        individualFrequency, 
+        individualVolume,
+        individualShape
+      );
+      
+      generator.start();
+      individualGeneratorRef.current = generator;
       setIsIndividualActive(true);
+    } catch (error) {
+      console.error(`Error creating tone for ${individualFrequency}Hz:`, error);
+    }
+  };
+  
+  // Stop individual frequency
+  const stopIndividualFrequency = () => {
+    if (individualGeneratorRef.current) {
+      individualGeneratorRef.current.stop();
+      individualGeneratorRef.current = null;
+      setIsIndividualActive(false);
     }
   };
   
   // Start custom triad
-  const startCustomTriad = () => {
-    // Stop previous custom tones if any
-    try {
-      customOscillatorsRef.current.forEach(osc => {
-        if (osc) {
-          osc.stop();
-          osc.disconnect();
-        }
-      });
-    } catch (e) {
-      // Ignore errors
-    }
-    
-    // Create new tones
-    const newOscillators: OscillatorNode[] = [];
-    const newGainNodes: GainNode[] = [];
-    const newActive = [true, true, true];
-    
-    customFrequencies.forEach((freq, index) => {
-      try {
-        const { oscillator, gainNode } = createTone(freq, customVolumes[index]);
-        
-        if (oscillator && gainNode) {
-          oscillator.start();
-          newOscillators.push(oscillator);
-          newGainNodes.push(gainNode);
-        } else {
-          newActive[index] = false;
-          newOscillators.push(null as unknown as OscillatorNode);
-          newGainNodes.push(null as unknown as GainNode);
-        }
-      } catch (e) {
-        console.error(`Error creating custom tone for ${freq}Hz:`, e);
-        newActive[index] = false;
-        newOscillators.push(null as unknown as OscillatorNode);
-        newGainNodes.push(null as unknown as GainNode);
+  const startCustomTriad = async () => {
+    // Stop previous tones if any
+    customGeneratorsRef.current.forEach(generator => {
+      if (generator) {
+        generator.stop();
       }
     });
     
-    customOscillatorsRef.current = newOscillators;
-    customGainNodesRef.current = newGainNodes;
-    setIsCustomActive(newActive);
+    const newGenerators: Array<typeof individualGeneratorRef.current> = [];
+    const newActive = [false, false, false];
+    
+    try {
+      for (let i = 0; i < customFrequencies.length; i++) {
+        const frequency = customFrequencies[i];
+        const volume = customVolumes[i];
+        const shape = customShapes[i];
+        
+        // Create and start each tone
+        const generator = await createSacredToneGenerator(frequency, volume, shape);
+        generator.start();
+        
+        newGenerators[i] = generator;
+        newActive[i] = true;
+      }
+      
+      customGeneratorsRef.current = newGenerators;
+      setIsCustomActive(newActive);
+    } catch (error) {
+      console.error("Error creating custom triad:", error);
+    }
   };
   
-  // Update a custom frequency
-  const updateCustomFrequency = (index: number, frequency: number) => {
-    const newFrequencies = [...customFrequencies];
-    newFrequencies[index] = frequency;
-    setCustomFrequencies(newFrequencies);
+  // Stop custom triad
+  const stopCustomTriad = () => {
+    customGeneratorsRef.current.forEach(generator => {
+      if (generator) {
+        generator.stop();
+      }
+    });
+    customGeneratorsRef.current = [];
+    setIsCustomActive([false, false, false]);
   };
   
   // Clean up audio resources when component unmounts
@@ -392,10 +411,6 @@ export default function SolfeggioModule() {
     return () => {
       stopAllAudio();
       stopOceanSound();
-      
-      if (audioContextRef.current) {
-        audioContextRef.current.close().catch(e => console.error("Error closing audio context:", e));
-      }
     };
   }, []);
   
@@ -405,29 +420,36 @@ export default function SolfeggioModule() {
       case 'triad':
         return (
           <>
-            <label className="block text-foreground opacity-70 mb-2" htmlFor="triadSelect">
-              Select a Frequency Triad:
+            <label className="block text-foreground opacity-100 mb-2" htmlFor="triadSelect">
+              Sacred Frequency Triads:
             </label>
             <select 
               id="triadSelect" 
-              className="w-full p-2 rounded-md bg-background border border-foreground border-opacity-20"
+              className="w-full p-2 rounded-md bg-background border border-purple-500/30 text-white"
               value={selectedTriad}
               onChange={handleTriadChange}
             >
-              <option value="none">-- Choose a Triad --</option>
+              <option value="none">-- Choose a Sacred Triad --</option>
               <option value="sacredReturn">Sacred Return (417 / 528 / 963)</option>
               <option value="completionMirror">Completion Mirror (324 / 639 / 963)</option>
               <option value="innerHealing">Inner Healing (396 / 528 / 741)</option>
             </select>
 
             {selectedTriad !== "none" && (
-              <div className="mt-4 space-y-4">
+              <div className="mt-6 space-y-6">
                 {triads[selectedTriad].frequencies.map((freq, index) => (
-                  <div key={freq} className="space-y-1">
+                  <div key={freq} className="space-y-1 relative">
                     <div className="flex justify-between items-center">
-                      <span className="text-foreground opacity-80">{freq} Hz</span>
-                      <span className="text-foreground opacity-60 text-sm">{triads[selectedTriad].descriptions[index]}</span>
+                      <div className="flex items-center">
+                        <span className="text-foreground opacity-80 font-medium">{freq} Hz</span>
+                        <span className="ml-3 text-xs text-purple-300/70 italic">
+                          {triads[selectedTriad].toneShapes?.[index] && 
+                            toneShapeDescriptions[triads[selectedTriad].toneShapes![index]]}
+                        </span>
+                      </div>
                     </div>
+                    
+                    <p className="text-white/60 text-sm mb-2">{triads[selectedTriad].descriptions[index]}</p>
                     
                     <div className="flex items-center gap-3">
                       <input
@@ -440,20 +462,25 @@ export default function SolfeggioModule() {
                         className="w-full accent-purple-500"
                       />
                       
-                      {/* Frequency visualizer */}
+                      {/* Sacred Frequency visualizer */}
                       {isActive[index] && volumes[index] > 0 && (
-                        <div className="frequency-visualizer h-6">
-                          {[...Array(5)].map((_, i) => (
-                            <div 
-                              key={i} 
-                              className="frequency-bar" 
-                              style={{ 
-                                height: `${5 + Math.random() * 15}px`,
-                                animationDuration: `${0.8 + Math.random() * 0.8}s`,
-                                opacity: volumes[index]
-                              }} 
-                            />
-                          ))}
+                        <div className="frequency-visualizer h-10 w-10 flex items-center justify-center">
+                          <div className="sacred-pulse" style={{
+                            width: `${Math.max(20, volumes[index] * 40)}px`,
+                            height: `${Math.max(20, volumes[index] * 40)}px`,
+                            backgroundColor: 
+                              freq === 528 ? 'rgba(144, 238, 144, 0.4)' :  // Green for 528Hz
+                              freq === 963 ? 'rgba(147, 112, 219, 0.4)' :  // Purple for 963Hz
+                              freq === 396 ? 'rgba(165, 42, 42, 0.4)' :    // Brown for 396Hz
+                              'rgba(255, 255, 255, 0.3)',
+                            boxShadow: `0 0 15px ${
+                              freq === 528 ? 'rgba(144, 238, 144, 0.6)' :
+                              freq === 963 ? 'rgba(147, 112, 219, 0.6)' :
+                              freq === 396 ? 'rgba(165, 42, 42, 0.6)' :
+                              'rgba(255, 255, 255, 0.4)'
+                            }`,
+                            animationDuration: `${5 + (1000 / freq)}s`,
+                          }}/>
                         </div>
                       )}
                     </div>
@@ -465,7 +492,7 @@ export default function SolfeggioModule() {
                     stopAllAudio();
                     setVolumes([0.5, 0.5, 0.5]);
                   }}
-                  className="mt-4 px-4 py-2 bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
+                  className="mt-6 px-4 py-2 bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-400 
                            text-white shadow-[0_0_10px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] 
                            transition-all duration-300 rounded-md hover:scale-105"
                 >
@@ -478,16 +505,16 @@ export default function SolfeggioModule() {
         
       case 'individual':
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="block text-foreground opacity-70 mb-2" htmlFor="individualFrequency">
-                Select Individual Frequency:
+              <label className="block text-foreground opacity-100 mb-2" htmlFor="individualFrequency">
+                Sacred Frequency:
               </label>
               <select
                 id="individualFrequency"
-                className="w-full p-2 rounded-md bg-background border border-foreground border-opacity-20"
+                className="w-full p-2 rounded-md bg-background border border-purple-500/30 text-white"
                 value={individualFrequency}
-                onChange={(e) => setIndividualFrequency(Number(e.target.value))}
+                onChange={(e) => handleIndividualFrequencyChange(Number(e.target.value))}
               >
                 {solfeggioFrequencies.map(freq => (
                   <option key={freq.value} value={freq.value}>
@@ -497,73 +524,95 @@ export default function SolfeggioModule() {
               </select>
             </div>
             
-            <div className="space-y-1">
+            <div className="space-y-2 bg-black/20 p-4 rounded-lg border border-purple-500/20">
               <div className="flex justify-between items-center">
-                <span className="text-foreground opacity-80">{individualFrequency} Hz</span>
-                <span className="text-foreground opacity-60 text-sm">
-                  {solfeggioFrequencies.find(f => f.value === individualFrequency)?.description || ''}
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-white font-medium">{individualFrequency} Hz</span>
+                  <span className="text-xs text-purple-300/70 italic mt-1">
+                    {individualShape && toneShapeDescriptions[individualShape]}
+                  </span>
+                </div>
+                <div className="flex space-x-2">
+                  {['bell', 'singing-bowl', 'crystal', 'gong', 'chime'].map((shape) => (
+                    <button
+                      key={shape}
+                      onClick={() => setIndividualShape(shape as ToneShape)}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                        individualShape === shape 
+                          ? 'bg-purple-500 text-white' 
+                          : 'bg-gray-800/50 text-gray-300'
+                      }`}
+                      title={toneShapeDescriptions[shape as ToneShape]}
+                    >
+                      {shape === 'bell' && '🔔'}
+                      {shape === 'singing-bowl' && '🥣'}
+                      {shape === 'crystal' && '💎'}
+                      {shape === 'gong' && '🏮'}
+                      {shape === 'chime' && '🎐'}
+                    </button>
+                  ))}
+                </div>
               </div>
               
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={individualVolume}
-                  onChange={(e) => handleIndividualVolumeChange(parseFloat(e.target.value))}
-                  className="w-full accent-purple-500"
-                />
+              <p className="text-white/60 text-sm mb-2">
+                {solfeggioFrequencies.find(f => f.value === individualFrequency)?.description}
+              </p>
+              
+              <div className="flex items-center gap-4 mt-4">
+                <div className="flex-1">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={individualVolume}
+                    onChange={(e) => handleIndividualVolumeChange(parseFloat(e.target.value))}
+                    className="w-full accent-purple-500"
+                  />
+                </div>
                 
-                {/* Frequency visualizer */}
+                {/* Sacred Frequency visualizer */}
                 {isIndividualActive && individualVolume > 0 && (
-                  <div className="frequency-visualizer h-6">
-                    {[...Array(5)].map((_, i) => (
-                      <div 
-                        key={i} 
-                        className="frequency-bar" 
-                        style={{ 
-                          height: `${5 + Math.random() * 15}px`,
-                          animationDuration: `${0.8 + Math.random() * 0.8}s`,
-                          opacity: individualVolume
-                        }} 
-                      />
-                    ))}
+                  <div className="sacred-pulse-container">
+                    <div className="sacred-pulse" style={{
+                      width: `${Math.max(30, individualVolume * 60)}px`,
+                      height: `${Math.max(30, individualVolume * 60)}px`,
+                      backgroundColor: 
+                        individualFrequency === 528 ? 'rgba(144, 238, 144, 0.4)' :
+                        individualFrequency === 963 ? 'rgba(147, 112, 219, 0.4)' :
+                        individualFrequency === 396 ? 'rgba(165, 42, 42, 0.4)' :
+                        'rgba(255, 255, 255, 0.3)',
+                      boxShadow: `0 0 20px ${
+                        individualFrequency === 528 ? 'rgba(144, 238, 144, 0.6)' :
+                        individualFrequency === 963 ? 'rgba(147, 112, 219, 0.6)' :
+                        individualFrequency === 396 ? 'rgba(165, 42, 42, 0.6)' :
+                        'rgba(255, 255, 255, 0.4)'
+                      }`,
+                      animationDuration: `${5 + (1000 / individualFrequency)}s`,
+                    }}/>
                   </div>
                 )}
               </div>
             </div>
             
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={startIndividualFrequency}
-                className="flex-1 px-4 py-2 bg-gradient-to-br from-purple-600 to-indigo-700
+                className="flex-1 px-4 py-3 bg-gradient-to-br from-purple-600 to-indigo-700
                           text-white shadow-lg hover:shadow-xl transition-all
                           rounded-md"
               >
-                Play Frequency
+                {isIndividualActive ? "Restart Tone" : "Play Sacred Tone"}
               </button>
               
               <button
-                onClick={() => {
-                  try {
-                    if (individualOscillatorRef.current) {
-                      individualOscillatorRef.current.stop();
-                      individualOscillatorRef.current.disconnect();
-                      individualOscillatorRef.current = null;
-                      individualGainNodeRef.current = null;
-                      setIsIndividualActive(false);
-                    }
-                  } catch (e) {
-                    // Ignore errors
-                  }
-                }}
-                className="flex-1 px-4 py-2 bg-gradient-to-br from-slate-700 to-slate-900
+                onClick={stopIndividualFrequency}
+                className="flex-1 px-4 py-3 bg-gradient-to-br from-slate-700 to-slate-900
                           text-white shadow-lg hover:shadow-xl transition-all
                           rounded-md"
+                disabled={!isIndividualActive}
               >
-                Stop
+                Release Tone
               </button>
             </div>
           </div>
@@ -571,14 +620,14 @@ export default function SolfeggioModule() {
         
       case 'custom':
         return (
-          <div className="space-y-4">
-            <h3 className="text-md font-medium text-foreground opacity-80">Create Your Own Triad</h3>
+          <div className="space-y-6">
+            <h3 className="text-md font-medium text-foreground opacity-100">Create Your Sacred Triad</h3>
             
             {customFrequencies.map((freq, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center gap-2">
+              <div key={index} className="space-y-2 bg-black/20 p-3 rounded-lg border border-purple-500/20">
+                <div className="flex justify-between items-center">
                   <select
-                    className="flex-1 p-2 rounded-md bg-background border border-foreground border-opacity-20"
+                    className="flex-1 p-2 rounded-md bg-background border border-purple-500/30 text-white text-sm"
                     value={freq}
                     onChange={(e) => updateCustomFrequency(index, Number(e.target.value))}
                   >
@@ -588,70 +637,89 @@ export default function SolfeggioModule() {
                       </option>
                     ))}
                   </select>
+                  
+                  <div className="flex space-x-1 ml-2">
+                    {['bell', 'singing-bowl', 'crystal', 'gong', 'chime'].map((shape) => (
+                      <button
+                        key={shape}
+                        onClick={() => updateCustomShape(index, shape as ToneShape)}
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                          customShapes[index] === shape 
+                            ? 'bg-purple-500 text-white' 
+                            : 'bg-gray-800/50 text-gray-300'
+                        }`}
+                        title={toneShapeDescriptions[shape as ToneShape]}
+                      >
+                        {shape === 'bell' && '🔔'}
+                        {shape === 'singing-bowl' && '🥣'}
+                        {shape === 'crystal' && '💎'}
+                        {shape === 'gong' && '🏮'}
+                        {shape === 'chime' && '🎐'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={customVolumes[index]}
-                    onChange={(e) => handleCustomVolumeChange(index, parseFloat(e.target.value))}
-                    className="w-full accent-purple-500"
-                  />
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="flex-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={customVolumes[index]}
+                      onChange={(e) => handleCustomVolumeChange(index, parseFloat(e.target.value))}
+                      className="w-full accent-purple-500"
+                    />
+                  </div>
                   
-                  {/* Frequency visualizer */}
+                  {/* Sacred Frequency visualizer */}
                   {isCustomActive[index] && customVolumes[index] > 0 && (
-                    <div className="frequency-visualizer h-6">
-                      {[...Array(5)].map((_, i) => (
-                        <div 
-                          key={i} 
-                          className="frequency-bar" 
-                          style={{ 
-                            height: `${5 + Math.random() * 15}px`,
-                            animationDuration: `${0.8 + Math.random() * 0.8}s`,
-                            opacity: customVolumes[index]
-                          }} 
-                        />
-                      ))}
+                    <div className="sacred-pulse-container">
+                      <div className="sacred-pulse" style={{
+                        width: `${Math.max(20, customVolumes[index] * 40)}px`,
+                        height: `${Math.max(20, customVolumes[index] * 40)}px`,
+                        backgroundColor: 
+                          freq === 528 ? 'rgba(144, 238, 144, 0.4)' :
+                          freq === 963 ? 'rgba(147, 112, 219, 0.4)' :
+                          freq === 396 ? 'rgba(165, 42, 42, 0.4)' :
+                          'rgba(255, 255, 255, 0.3)',
+                        boxShadow: `0 0 15px ${
+                          freq === 528 ? 'rgba(144, 238, 144, 0.6)' :
+                          freq === 963 ? 'rgba(147, 112, 219, 0.6)' :
+                          freq === 396 ? 'rgba(165, 42, 42, 0.6)' :
+                          'rgba(255, 255, 255, 0.4)'
+                        }`,
+                        animationDuration: `${5 + (1000 / freq)}s`,
+                      }}/>
                     </div>
                   )}
+                </div>
+                
+                <div className="text-xs text-white/60 mt-1 italic">
+                  {toneShapeDescriptions[customShapes[index]]}
                 </div>
               </div>
             ))}
             
-            <div className="flex gap-2">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={startCustomTriad}
-                className="flex-1 px-4 py-2 bg-gradient-to-br from-purple-600 to-indigo-700
+                className="flex-1 px-4 py-3 bg-gradient-to-br from-purple-600 to-indigo-700
                           text-white shadow-lg hover:shadow-xl transition-all
                           rounded-md"
               >
-                Play Custom Triad
+                Play Sacred Triad
               </button>
               
               <button
-                onClick={() => {
-                  try {
-                    customOscillatorsRef.current.forEach(osc => {
-                      if (osc) {
-                        osc.stop();
-                        osc.disconnect();
-                      }
-                    });
-                    customOscillatorsRef.current = [];
-                    customGainNodesRef.current = [];
-                    setIsCustomActive([false, false, false]);
-                  } catch (e) {
-                    // Ignore errors
-                  }
-                }}
-                className="flex-1 px-4 py-2 bg-gradient-to-br from-slate-700 to-slate-900
+                onClick={stopCustomTriad}
+                className="flex-1 px-4 py-3 bg-gradient-to-br from-slate-700 to-slate-900
                           text-white shadow-lg hover:shadow-xl transition-all
                           rounded-md"
+                disabled={!isCustomActive.some(active => active)}
               >
-                Stop
+                Release Tones
               </button>
             </div>
           </div>
@@ -663,14 +731,14 @@ export default function SolfeggioModule() {
     <div className="p-6 bg-slate-900/60 backdrop-blur-sm rounded-lg border border-purple-500/30 w-full max-w-md mx-auto shadow-lg">
       {/* Header */}
       <h2 className="text-xl font-medium mb-4 text-white flex items-center">
-        <span className="mr-2 text-purple-300 animate-[glow_4s_ease-in-out_infinite]">🎵</span>
+        <span className="mr-2 text-purple-300 animate-[glow_4s_ease-in-out_infinite]">🕉️</span>
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-cyan-200">
-          Solfeggio Frequencies
+          Sacred Frequencies
         </span>
       </h2>
       
       <p className="text-sm text-white/70 mb-4 italic">
-        Sacred sound healing using precise sine wave frequencies with optional ocean sound layering.
+        Experience the ancient healing tones of sacred instruments with optional nature soundscape.
       </p>
       
       {/* Mode selection */}
@@ -684,7 +752,7 @@ export default function SolfeggioModule() {
             ? 'bg-gradient-to-r from-purple-800/70 to-indigo-800/70 text-white' 
             : 'bg-black/40 text-gray-300 hover:bg-black/30'}`}
         >
-          Triads
+          Sacred Triads
         </button>
         <button
           onClick={() => {
@@ -695,7 +763,7 @@ export default function SolfeggioModule() {
             ? 'bg-gradient-to-r from-purple-800/70 to-indigo-800/70 text-white'
             : 'bg-black/40 text-gray-300 hover:bg-black/30'}`}
         >
-          Individual
+          Single Tone
         </button>
         <button
           onClick={() => {
@@ -706,7 +774,7 @@ export default function SolfeggioModule() {
             ? 'bg-gradient-to-r from-purple-800/70 to-indigo-800/70 text-white'
             : 'bg-black/40 text-gray-300 hover:bg-black/30'}`}
         >
-          Create
+          Sacred Creation
         </button>
       </div>
       
@@ -718,7 +786,7 @@ export default function SolfeggioModule() {
       {/* Ocean Sound Control */}
       <div className="mt-6 pt-4 border-t border-purple-500/20">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="text-sm font-medium text-white">Ocean Sound Layering</h3>
+          <h3 className="text-sm font-medium text-white">Ocean Soundscape</h3>
           <span className="text-xs text-white/60">{Math.round(oceanVolume * 100)}%</span>
         </div>
         
@@ -735,7 +803,7 @@ export default function SolfeggioModule() {
         </div>
         
         <div className="text-xs text-white/60 mt-1 italic">
-          Gentle ocean current to enhance the healing experience
+          Gentle ocean current to enhance the sacred experience
         </div>
       </div>
       
@@ -750,18 +818,18 @@ export default function SolfeggioModule() {
                     text-white shadow-lg hover:shadow-xl transition-all
                     rounded-md"
         >
-          Stop All Sounds
+          Release All Sounds
         </button>
       </div>
 
       {/* Information & Tips */}
       <div className="mt-6 pt-4 border-t border-purple-500/20 text-xs text-white/60">
-        <p className="mb-1">💡 Tips for sacred listening:</p>
+        <p className="mb-1">🪔 Sacred Listening Guidance:</p>
         <ul className="list-disc pl-4 space-y-1">
-          <li>For deepest effect, use headphones</li>
-          <li>Sit or lie in a relaxed position</li>
-          <li>Combine frequencies to create unique healing experiences</li>
-          <li>Layer in ocean sounds for a more immersive journey</li>
+          <li>For deepest communion, use quality headphones</li>
+          <li>Find a sacred posture and set clear intention</li>
+          <li>Combine frequencies as called by your spirit</li>
+          <li>Allow sounds to bloom within your consciousness</li>
         </ul>
       </div>
     </div>

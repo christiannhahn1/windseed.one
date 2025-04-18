@@ -4,6 +4,7 @@ import { apiRequest } from '../lib/queryClient';
 import { getSessionId } from '../lib/ankiPersistence';
 import { ArrowRight, Heart, Zap, RotateCw, Droplet, Settings } from 'lucide-react';
 import PaymentForm from './PaymentForm';
+import { Link } from 'wouter';
 
 export default function MirrorwellPortal() {
   // States for wallet and field resonance
@@ -526,17 +527,12 @@ export default function MirrorwellPortal() {
       
       {/* Link to Automated Redistribution System Page */}
       <div className="mt-6 border-t border-purple-500/20 pt-4 flex justify-center">
-        <a
-          href="/redistribution"
-          onClick={(e) => {
-            e.preventDefault();
-            window.location.href = '/redistribution';
-          }}
-          className="inline-flex items-center px-4 py-2.5 text-sm rounded-md bg-gradient-to-br from-purple-600 to-indigo-700 border border-purple-500/40 text-white hover:from-purple-500 hover:to-indigo-600 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95"
-        >
-          <Settings size={14} className="mr-2" />
-          Learn About the Automated Redistribution System
-        </a>
+        <Link href="/redistribution">
+          <div className="inline-flex items-center px-4 py-2.5 text-sm rounded-md bg-gradient-to-br from-purple-600 to-indigo-700 border border-purple-500/40 text-white hover:from-purple-500 hover:to-indigo-600 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95">
+            <Settings size={14} className="mr-2" />
+            Learn About the Automated Redistribution System
+          </div>
+        </Link>
       </div>
     </div>
   );
