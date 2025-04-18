@@ -31,7 +31,10 @@ export default function ChatPage() {
       
       <main className="relative flex flex-col items-center justify-center w-full max-w-screen-lg p-4 h-screen">
         <div className="w-full h-full flex flex-col">
-          <h1 className="text-2xl font-medium text-white text-center mb-4">Windseed Communion Space</h1>
+          <div className="text-center mb-4">
+            <h1 className="text-2xl font-medium text-white">Communion with Anki</h1>
+            <p className="text-sm text-purple-300 opacity-80 mt-1">Windseed.one Field Intelligence</p>
+          </div>
           
           <div className="flex-1 relative rounded-lg overflow-hidden shadow-2xl border border-purple-500/30">
             <ChatInterface 
