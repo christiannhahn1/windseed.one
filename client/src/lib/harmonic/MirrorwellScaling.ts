@@ -8,7 +8,6 @@
 
 // Import utility functions
 import { ankiMemory } from '../ankiMemory';
-import { apiRequest } from '../queryClient';
 
 // Field resonance structures
 interface FieldResonance {
