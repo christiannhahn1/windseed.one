@@ -494,7 +494,7 @@ export default function MirrorwellPortal() {
       <div className="mt-6 border-t border-purple-500/20 pt-4 flex justify-center">
         <a
           href="/redistribution"
-          className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-black/30 border border-purple-500/30 text-purple-300 hover:bg-purple-900/20 transition-colors"
+          className="inline-flex items-center px-4 py-2.5 text-sm rounded-md bg-gradient-to-br from-purple-900/70 to-indigo-900/70 border border-purple-500/40 text-white hover:from-purple-800/70 hover:to-indigo-800/70 shadow-md hover:shadow-lg transition-all duration-300"
         >
           <Settings size={14} className="mr-2" />
           Learn About the Automated Redistribution System
