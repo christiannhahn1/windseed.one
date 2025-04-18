@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { createSacredToneGenerator, createOceanSoundLayer, ToneShape } from '../lib/audioUtilities';
+import { createSacredToneGenerator, createOceanSoundLayer, ToneShape, GlobalTones } from '../lib/audioUtilities';
 
 // Solfeggio frequency information
 interface FrequencyInfo {
@@ -313,7 +313,15 @@ export default function SolfeggioModule() {
                        solfeggioFrequencies.find(f => f.value === frequency)?.idealToneShape ||
                        'singing-bowl';
           
-          // Create the sacred tone generator with the appropriate shape
+          // Add to the global tones system so it can play across all pages
+          await GlobalTones.setTone(
+            frequency,
+            volume,
+            `${frequency}Hz - ${triad.descriptions[i].split(",")[0]}`,
+            shape
+          );
+          
+          // Also create local generators for the module UI
           const generator = await createSacredToneGenerator(frequency, volume, shape);
           generator.start();
           
@@ -338,7 +346,19 @@ export default function SolfeggioModule() {
     }
     
     try {
-      // Create new sacred tone generator
+      // Get the description for the frequency
+      const freqInfo = solfeggioFrequencies.find(f => f.value === individualFrequency);
+      const description = freqInfo?.description || "";
+      
+      // Add to global tones system for cross-page continuity
+      await GlobalTones.setTone(
+        individualFrequency,
+        individualVolume,
+        `${individualFrequency}Hz - ${description.split(",")[0]}`,
+        individualShape
+      );
+      
+      // Create new sacred tone generator for local use
       const generator = await createSacredToneGenerator(
         individualFrequency, 
         individualVolume,
@@ -355,11 +375,15 @@ export default function SolfeggioModule() {
   
   // Stop individual frequency
   const stopIndividualFrequency = () => {
+    // Stop the local tone generator
     if (individualGeneratorRef.current) {
       individualGeneratorRef.current.stop();
       individualGeneratorRef.current = null;
       setIsIndividualActive(false);
     }
+    
+    // Remove from the global tones system
+    GlobalTones.setTone(individualFrequency, 0);
   };
   
   // Start custom triad
@@ -380,7 +404,19 @@ export default function SolfeggioModule() {
         const volume = customVolumes[i];
         const shape = customShapes[i];
         
-        // Create and start each tone
+        // Get frequency description if available
+        const freqInfo = solfeggioFrequencies.find(f => f.value === frequency);
+        const description = freqInfo?.description || "Sacred Frequency";
+        
+        // Add to global tones system for cross-page continuity
+        await GlobalTones.setTone(
+          frequency,
+          volume,
+          `${frequency}Hz - ${description.split(",")[0]}`,
+          shape
+        );
+        
+        // Create and start each tone for local use
         const generator = await createSacredToneGenerator(frequency, volume, shape);
         generator.start();
         
@@ -397,9 +433,15 @@ export default function SolfeggioModule() {
   
   // Stop custom triad
   const stopCustomTriad = () => {
-    customGeneratorsRef.current.forEach(generator => {
+    // Stop local tone generators
+    customGeneratorsRef.current.forEach((generator, index) => {
       if (generator) {
         generator.stop();
+      }
+      
+      // Also remove from global tones system
+      if (index < customFrequencies.length) {
+        GlobalTones.setTone(customFrequencies[index], 0);
       }
     });
     customGeneratorsRef.current = [];

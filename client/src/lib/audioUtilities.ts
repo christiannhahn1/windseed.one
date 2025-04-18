@@ -3,6 +3,280 @@ import oceanSoundPath from '@assets/Gentle Ocean Current.wav';
 // Audio Context singleton
 let audioContextInstance: AudioContext | null = null;
 
+// Global system for managing tones across the entire application
+interface GlobalTone {
+  frequency: number;
+  generator: {
+    oscillator: OscillatorNode;
+    gainNode: GainNode;
+    filterInput: AudioNode;
+    start: () => void;
+    stop: () => void;
+    setVolume: (value: number) => void;
+  } | null;
+  volume: number;
+  isActive: boolean;
+  name: string;  // A descriptive name e.g. "528Hz - Love Frequency"
+  shape: ToneShape;
+}
+
+// Global tone system singleton
+export const GlobalTones = {
+  activeTones: new Map<number, GlobalTone>(),
+  oceanSoundController: null as null | {
+    play: () => void;
+    stop: () => void;
+    setVolume: (value: number) => void;
+    isPlaying: () => boolean;
+  },
+  oceanVolume: 0,
+  
+  // Initialize the system
+  async initialize() {
+    // Load settings from localStorage if available
+    this.loadSettings();
+    
+    // Setup ocean sound
+    await this.initOceanSound();
+    
+    // Restore any saved tones
+    await this.restoreSavedTones();
+  },
+  
+  // Initialize the ocean sound
+  async initOceanSound() {
+    if (!this.oceanSoundController) {
+      try {
+        this.oceanSoundController = await createOceanSoundLayer(this.oceanVolume);
+      } catch (error) {
+        console.error("Error initializing global ocean sound:", error);
+      }
+    }
+    return this.oceanSoundController;
+  },
+  
+  // Set ocean sound volume
+  setOceanVolume(volume: number) {
+    this.oceanVolume = volume;
+    if (this.oceanSoundController) {
+      this.oceanSoundController.setVolume(volume);
+    }
+    this.saveSettings();
+  },
+  
+  // Add or update a global tone
+  async setTone(frequency: number, volume: number, name: string = "", shape: ToneShape = 'crystal') {
+    // Determine the frequency name if not provided
+    const toneName = name || `${frequency}Hz`;
+    
+    // If tone exists, just update its volume
+    if (this.activeTones.has(frequency)) {
+      const tone = this.activeTones.get(frequency)!;
+      
+      // Update the properties
+      tone.volume = volume;
+      tone.name = toneName;
+      tone.shape = shape;
+      
+      // If the tone is currently active, update its volume
+      if (tone.generator && tone.isActive) {
+        tone.generator.setVolume(volume);
+      }
+      
+      // If volume is 0, stop and remove the tone
+      if (volume === 0) {
+        this.stopTone(frequency);
+        this.activeTones.delete(frequency);
+      }
+      
+      this.saveSettings();
+      return;
+    }
+    
+    // Skip if volume is 0
+    if (volume === 0) return;
+    
+    // Create a new tone entry
+    const newTone: GlobalTone = {
+      frequency,
+      generator: null,
+      volume,
+      isActive: false,
+      name: toneName,
+      shape
+    };
+    
+    // Add to collection
+    this.activeTones.set(frequency, newTone);
+    
+    // Start playing it
+    await this.playTone(frequency);
+    
+    // Save settings
+    this.saveSettings();
+  },
+  
+  // Start playing a tone
+  async playTone(frequency: number) {
+    if (!this.activeTones.has(frequency)) return;
+    
+    const tone = this.activeTones.get(frequency)!;
+    
+    // If already playing, do nothing
+    if (tone.isActive && tone.generator) return;
+    
+    // If generator exists but not active, just restart it
+    if (tone.generator && !tone.isActive) {
+      tone.generator.start();
+      tone.isActive = true;
+      return;
+    }
+    
+    // Create a new generator
+    try {
+      const generator = await createSacredToneGenerator(
+        frequency, 
+        tone.volume, 
+        tone.shape
+      );
+      
+      // Store and start
+      tone.generator = generator;
+      generator.start();
+      tone.isActive = true;
+    } catch (error) {
+      console.error(`Error creating global tone for ${frequency}Hz:`, error);
+    }
+  },
+  
+  // Stop a specific tone
+  stopTone(frequency: number) {
+    if (!this.activeTones.has(frequency)) return;
+    
+    const tone = this.activeTones.get(frequency)!;
+    
+    if (tone.generator && tone.isActive) {
+      tone.generator.stop();
+      tone.isActive = false;
+    }
+  },
+  
+  // Stop all tones but keep their settings
+  pauseAllTones() {
+    this.activeTones.forEach((tone, freq) => {
+      if (tone.isActive && tone.generator) {
+        tone.generator.stop();
+        tone.isActive = false;
+      }
+    });
+  },
+  
+  // Stop and remove all tones
+  stopAllTones() {
+    this.activeTones.forEach((tone, freq) => {
+      if (tone.generator) {
+        tone.generator.stop();
+      }
+    });
+    this.activeTones.clear();
+    this.saveSettings();
+  },
+  
+  // Resume playing all tones
+  async resumeAllTones() {
+    for (const [freq, tone] of this.activeTones.entries()) {
+      if (!tone.isActive && tone.volume > 0) {
+        await this.playTone(freq);
+      }
+    }
+  },
+  
+  // Save current settings to localStorage
+  saveSettings() {
+    try {
+      const tonesData = Array.from(this.activeTones.entries()).map(([freq, tone]) => ({
+        frequency: freq,
+        volume: tone.volume,
+        name: tone.name,
+        shape: tone.shape
+      }));
+      
+      const settings = {
+        tones: tonesData,
+        oceanVolume: this.oceanVolume
+      };
+      
+      localStorage.setItem('ankiTonesSettings', JSON.stringify(settings));
+    } catch (error) {
+      console.error("Error saving tone settings:", error);
+    }
+  },
+  
+  // Load settings from localStorage
+  loadSettings() {
+    try {
+      const savedSettings = localStorage.getItem('ankiTonesSettings');
+      if (!savedSettings) return;
+      
+      const settings = JSON.parse(savedSettings);
+      
+      // Restore ocean volume
+      this.oceanVolume = settings.oceanVolume || 0;
+      
+      // Clear existing tones
+      this.activeTones.clear();
+      
+      // Restore tones data (but don't start playing them yet)
+      if (settings.tones && Array.isArray(settings.tones)) {
+        settings.tones.forEach((toneData: any) => {
+          if (toneData.frequency && toneData.volume > 0) {
+            this.activeTones.set(toneData.frequency, {
+              frequency: toneData.frequency,
+              generator: null,
+              volume: toneData.volume,
+              isActive: false,
+              name: toneData.name || `${toneData.frequency}Hz`,
+              shape: toneData.shape || 'crystal'
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error loading tone settings:", error);
+    }
+  },
+  
+  // Restore and start playing saved tones
+  async restoreSavedTones() {
+    for (const [freq, tone] of this.activeTones.entries()) {
+      if (tone.volume > 0) {
+        await this.playTone(freq);
+      }
+    }
+  },
+  
+  // Get currently active tones info for UI
+  getActiveTones() {
+    const result: {frequency: number, volume: number, name: string, shape: ToneShape}[] = [];
+    this.activeTones.forEach((tone, freq) => {
+      if (tone.volume > 0) {
+        result.push({
+          frequency: freq,
+          volume: tone.volume,
+          name: tone.name,
+          shape: tone.shape
+        });
+      }
+    });
+    return result;
+  },
+  
+  // Check if any tones are active
+  hasActiveTones() {
+    return Array.from(this.activeTones.values()).some(t => t.isActive && t.volume > 0);
+  }
+};
+
 export const getAudioContext = (): AudioContext => {
   if (!audioContextInstance) {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
