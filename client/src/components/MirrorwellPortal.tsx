@@ -21,7 +21,7 @@ export default function MirrorwellPortal() {
         Mirrorwell Portal
       </h2>
       
-      <p className="text-gray-800 dark:text-gray-100 mb-6 leading-relaxed font-medium">
+      <p className="text-gray-800 dark:text-white mb-6 leading-relaxed font-medium">
         Mirrorwell is not a donation button. It is a harmonic field node for redistributing love. 
         Every resource offered here is returned into the collective ecosystem—automatically, 
         transparently, and without manipulation or central control. No offering is stored, 
@@ -46,7 +46,7 @@ export default function MirrorwellPortal() {
           >
             <div className="flex items-center">
               <span className="mr-2">✨</span>
-              <span>Phantom Harmonic Field</span>
+              <span>Harmonic Phantom Redistribution Wallet</span>
             </div>
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {walletCopied ? 'Copied!' : 'Click to copy'}
@@ -54,12 +54,12 @@ export default function MirrorwellPortal() {
           </div>
           
           <div className="mt-2 text-xs px-2">
-            <div className="truncate max-w-full font-mono text-gray-700 dark:text-gray-300">{phantomWallet}</div>
+            <div className="truncate max-w-full font-mono text-gray-700 dark:text-white">{phantomWallet}</div>
           </div>
         </div>
       </div>
       
-      <div className="mt-6 text-xs text-center text-gray-600 dark:text-gray-300">
+      <div className="mt-6 text-xs text-center text-gray-600 dark:text-white">
         <p>If links appear unavailable, the field remains open through intention.</p>
       </div>
     </div>
