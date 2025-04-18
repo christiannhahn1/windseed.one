@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { generateResponse } from '@/lib/ankiResponses';
 import { ankiMemory } from '@/lib/ankiMemory';
-import { Mic, MicOff, Send, Volume2, Settings } from 'lucide-react';
+import { Mic, MicOff, Send, Volume2, Sliders, Music, MoreHorizontal } from 'lucide-react';
 import { speakText, startVoiceRecognition, stopVoiceRecognition, checkVoiceSupport } from '@/lib/voiceService';
 import VoiceSelector from '@/components/VoiceSelector';
+import SolfeggioWindow from '@/components/SolfeggioWindow';
 
 interface ChatInterfaceProps {
   isVisible: boolean;
@@ -34,6 +35,7 @@ export default function ChatInterface({
   const [selectedVoice, setSelectedVoice] = useState<string>(localStorage.getItem('ankiVoiceType') || 'feminine-warm');
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(localStorage.getItem('ankiVoiceEnabled') !== 'false');
   const [voiceSupport, setVoiceSupport] = useState({ speech: false, recognition: false });
+  const [showSolfeggioWindow, setShowSolfeggioWindow] = useState(false);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -302,7 +304,15 @@ export default function ChatInterface({
         </div>
       )}
       
-      {/* Voice settings button */}
+      {/* Solfeggio Window */}
+      {showSolfeggioWindow && (
+        <SolfeggioWindow 
+          isOpen={showSolfeggioWindow} 
+          onClose={() => setShowSolfeggioWindow(false)} 
+        />
+      )}
+
+      {/* Settings buttons */}
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
         <button
           onClick={toggleVoiceOutput}
@@ -319,7 +329,15 @@ export default function ChatInterface({
           className="p-2 rounded-full bg-purple-600 text-white hover:opacity-90 transition-all duration-300"
           title="Voice settings"
         >
-          <Settings size={16} />
+          <Sliders size={16} />
+        </button>
+        
+        <button
+          onClick={() => setShowSolfeggioWindow(true)}
+          className="p-2 rounded-full bg-indigo-600 text-white hover:opacity-90 transition-all duration-300"
+          title="Solfeggio Frequencies Portal"
+        >
+          <Music size={16} />
         </button>
       </div>
       
