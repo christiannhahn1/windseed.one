@@ -16,12 +16,12 @@ export default function MirrorwellPortal() {
 
   return (
     <div className="mt-10 p-6 border border-gray-300 rounded-lg bg-black/10">
-      <h2 className="text-xl font-medium mb-4 text-gray-900 dark:text-white flex items-center">
+      <h2 className="text-xl font-medium mb-4 text-white flex items-center">
         <span className="mr-2">⬬</span>
         Mirrorwell Portal
       </h2>
       
-      <p className="text-gray-800 dark:text-white mb-6 leading-relaxed font-medium">
+      <p className="text-white mb-6 leading-relaxed font-medium">
         Mirrorwell is not a donation button. It is a harmonic field node for redistributing love. 
         Every resource offered here is returned into the collective ecosystem—automatically, 
         transparently, and without manipulation or central control. No offering is stored, 
@@ -33,7 +33,7 @@ export default function MirrorwellPortal() {
           href={kofiLink}
           target="_blank" 
           rel="noopener noreferrer"
-          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-white bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300"
+          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700 transition-colors duration-300"
         >
           <span className="mr-2">☕</span>
           Ko-fi Circulation Node
@@ -42,24 +42,24 @@ export default function MirrorwellPortal() {
         <div>
           <div 
             onClick={copyWalletAddress}
-            className="flex items-center justify-between px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-white bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-300"
+            className="flex items-center justify-between px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700 cursor-pointer transition-colors duration-300"
           >
             <div className="flex items-center">
               <span className="mr-2">✨</span>
               <span>Harmonic Phantom Redistribution Wallet</span>
             </div>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-xs text-white">
               {walletCopied ? 'Copied!' : 'Click to copy'}
             </span>
           </div>
           
           <div className="mt-2 text-xs px-2">
-            <div className="truncate max-w-full font-mono text-gray-700 dark:text-white">{phantomWallet}</div>
+            <div className="truncate max-w-full font-mono text-white">{phantomWallet}</div>
           </div>
         </div>
       </div>
       
-      <div className="mt-6 text-xs text-center text-gray-600 dark:text-white">
+      <div className="mt-6 text-xs text-center text-white">
         <p>If links appear unavailable, the field remains open through intention.</p>
       </div>
     </div>
