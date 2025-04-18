@@ -7,7 +7,6 @@ import ChatPage from "@/pages/ChatPage";
 import AdminPage from "@/pages/AdminPage";
 import RedistributionPage from "@/pages/RedistributionPage";
 import NotFound from "@/pages/not-found";
-import GlobalToneController from "@/components/GlobalToneController";
 import { useEffect } from "react";
 import { GlobalTones } from "./lib/audioUtilities";
 
@@ -54,7 +53,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router />
-      <GlobalToneController />
       <Toaster />
     </QueryClientProvider>
   );
