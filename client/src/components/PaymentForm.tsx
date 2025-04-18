@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
 import { Heart, CreditCard, CheckCircle } from 'lucide-react';
+import StripeCheckout from './StripeCheckout';
 
 interface PaymentFormProps {
   amount: string;
   currency: string;
-  onPaymentComplete: () => void;
+  onPaymentComplete: (paymentDetails?: any) => void;
   onCancel: () => void;
 }
 
 export default function PaymentForm({ amount, currency, onPaymentComplete, onCancel }: PaymentFormProps) {
+  const [paymentComplete, setPaymentComplete] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'stripe'>('stripe');
+  
+  // For demo only - old form fields
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
   const [expDate, setExpDate] = useState('');
   const [cvc, setCvc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentComplete, setPaymentComplete] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
   const [error, setError] = useState('');
 
   // Format card number with spaces

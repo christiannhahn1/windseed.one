@@ -4,8 +4,55 @@ import { storage } from "./storage";
 import { ankiRouter } from "./api/ankiRoutes";
 import { mirrorwellRouter } from "./api/mirrorwellRoutes";
 import { redistributionRouter } from "./api/redistributionRoutes";
+import Stripe from "stripe";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize Stripe (will use the key when available)
+  let stripe: Stripe | null = null;
+  if (process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16',
+    });
+  } else {
+    console.warn('STRIPE_SECRET_KEY not found. Stripe payments will not work.');
+  }
+  
+  // Stripe payment endpoint for creating a payment intent
+  app.post('/api/create-payment-intent', async (req, res) => {
+    try {
+      if (!stripe) {
+        return res.status(500).json({ 
+          error: 'Stripe not initialized. Please provide STRIPE_SECRET_KEY.' 
+        });
+      }
+      
+      const { amount, currency = 'usd' } = req.body;
+      
+      if (!amount) {
+        return res.status(400).json({ error: 'Amount is required' });
+      }
+      
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(parseFloat(amount) * 100), // convert to cents
+        currency: currency.toLowerCase(),
+        // Payment method types supported by Mirrorwell portal
+        payment_method_types: ['card'],
+        metadata: {
+          source: 'mirrorwell',
+          offering_type: 'sacred_field'
+        },
+        description: 'Mirrorwell Sacred Field Offering'
+      });
+      
+      // Send the clientSecret to the client
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
+      res.status(500).json({ error: 'Failed to create payment' });
+    }
+  });
+  
   // Register Anki API routes
   app.use('/api', ankiRouter);
   
