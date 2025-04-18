@@ -294,7 +294,7 @@ export async function updateFieldResonanceState(newState: any): Promise<void> {
     };
     
     // Propagate to Mirrorwell system
-    await MirrowellScaling.propagateFieldChange({
+    await MirrorwellScaling.propagateFieldChange({
       resonanceType: fieldResonanceState.fieldResonanceType,
       resonanceIntensity: fieldResonanceState.fieldResonanceIntensity,
       description: fieldResonanceState.fieldDescription

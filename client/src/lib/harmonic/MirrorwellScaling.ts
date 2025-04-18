@@ -71,63 +71,75 @@ export async function initializeMirrorwellSystem(): Promise<boolean> {
  */
 async function refreshFieldState(): Promise<void> {
   try {
-    // Get active field events
-    const fieldEventsResponse = await fetch('/api/mirrorwell/field-events/active');
-    
-    if (fieldEventsResponse.ok) {
-      activeResonanceEvents = await fieldEventsResponse.json();
+    try {
+      // Get active field events
+      const response = await fetch('/api/mirrorwell/field-events/active');
       
-      // Extract most intense resonance as field state
-      if (activeResonanceEvents.length > 0) {
-        const mostIntense = activeResonanceEvents.reduce((prev: any, current: any) => {
-          return (prev.resonance_intensity > current.resonance_intensity) ? prev : current;
-        });
+      if (response.ok) {
+        activeResonanceEvents = await response.json();
         
-        fieldState = {
-          resonanceType: mostIntense.resonance_type,
-          resonanceIntensity: mostIntense.resonance_intensity || 0.5,
-          description: mostIntense.resonance_description,
-          timestamp: new Date(mostIntense.created_at).getTime()
-        };
+        // Extract most intense resonance as field state
+        if (activeResonanceEvents.length > 0) {
+          const mostIntense = activeResonanceEvents.reduce((prev: any, current: any) => {
+            return (prev.resonance_intensity > current.resonance_intensity) ? prev : current;
+          });
+          
+          fieldState = {
+            resonanceType: mostIntense.resonance_type,
+            resonanceIntensity: mostIntense.resonance_intensity || 0.5,
+            description: mostIntense.resonance_description,
+            timestamp: new Date(mostIntense.created_at).getTime()
+          };
+        }
       }
+    } catch (error) {
+      console.warn('Error fetching field events:', error);
     }
     
-    // Get recent offerings
-    const offeringsResponse = await fetch('/api/mirrorwell/offerings');
-    
-    if (offeringsResponse.ok) {
-      const offerings = await offeringsResponse.json();
+    try {
+      // Get recent offerings
+      const response = await fetch('/api/mirrorwell/offerings');
       
-      // Convert to local structure
-      recentOfferings = offerings.map((offering: any) => ({
-        id: offering.id,
-        sessionId: offering.session_id,
-        amount: offering.offering_amount,
-        currency: offering.currency_type,
-        intent: offering.offering_intent,
-        resonance: offering.field_resonance,
-        timestamp: new Date(offering.created_at).getTime(),
-        redistributed: offering.redistributed || false
-      }));
+      if (response.ok) {
+        const offerings = await response.json();
+        
+        // Convert to local structure
+        recentOfferings = offerings.map((offering: any) => ({
+          id: offering.id,
+          sessionId: offering.session_id,
+          amount: offering.offering_amount,
+          currency: offering.currency_type,
+          intent: offering.offering_intent,
+          resonance: offering.field_resonance,
+          timestamp: new Date(offering.created_at).getTime(),
+          redistributed: offering.redistributed || false
+        }));
+      }
+    } catch (error) {
+      console.warn('Error fetching offerings:', error);
     }
     
-    // Get recent redistributions
-    const redistributionsResponse = await fetch('/api/mirrorwell/redistributions');
-    
-    if (redistributionsResponse.ok) {
-      const redistributions = await redistributionsResponse.json();
+    try {
+      // Get recent redistributions
+      const response = await fetch('/api/mirrorwell/redistributions');
       
-      // Convert to local structure
-      recentRedistributions = redistributions.map((redistribution: any) => ({
-        id: redistribution.id,
-        currency: redistribution.currency_type,
-        amount: redistribution.redistributed_amount,
-        sourceOfferingId: redistribution.source_offering_id,
-        recipientResonance: redistribution.recipient_resonance,
-        recipientSessionId: redistribution.recipient_session_id,
-        reason: redistribution.redistribution_reason,
-        timestamp: new Date(redistribution.created_at).getTime()
-      }));
+      if (response.ok) {
+        const redistributions = await response.json();
+      
+        // Convert to local structure
+        recentRedistributions = redistributions.map((redistribution: any) => ({
+          id: redistribution.id,
+          currency: redistribution.currency_type,
+          amount: redistribution.redistributed_amount,
+          sourceOfferingId: redistribution.source_offering_id,
+          recipientResonance: redistribution.recipient_resonance,
+          recipientSessionId: redistribution.recipient_session_id,
+          reason: redistribution.redistribution_reason,
+          timestamp: new Date(redistribution.created_at).getTime()
+        }));
+      }
+    } catch (error) {
+      console.warn('Error fetching redistributions:', error);
     }
   } catch (error) {
     console.warn('Error refreshing field state:', error);
@@ -170,7 +182,13 @@ export async function detectOfferingIntent(message: string): Promise<boolean> {
         active: true
       };
       
-      const response = await apiRequest('POST', '/api/mirrorwell/field-events', fieldEvent);
+      const response = await fetch('/api/mirrorwell/field-events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(fieldEvent)
+      });
       
       if (response.ok) {
         console.log('Offering intent recorded in field events');
@@ -216,7 +234,13 @@ export async function recordOffering(offering: {
     };
     
     // Record in the system
-    const response = await apiRequest('POST', '/api/mirrorwell/offerings', offeringRecord);
+    const response = await fetch('/api/mirrorwell/offerings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(offeringRecord)
+    });
     
     if (response.ok) {
       console.log('Offering recorded successfully');
@@ -266,7 +290,13 @@ export async function propagateFieldChange(newState: any): Promise<void> {
       active: true
     };
     
-    await apiRequest('POST', '/api/mirrorwell/field-events', fieldEvent);
+    await fetch('/api/mirrorwell/field-events', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(fieldEvent)
+    });
   } catch (error) {
     console.warn('Error propagating field change:', error);
   }
